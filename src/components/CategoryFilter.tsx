@@ -16,8 +16,8 @@ const CategoryFilter = ({ selected, onSelect }: CategoryFilterProps) => {
             px-5 py-2 rounded-full text-sm font-medium transition-all duration-200
             ${
               selected === cat
-                ? "bg-primary text-primary-foreground shadow-glass"
-                : "glass text-muted-foreground hover:bg-secondary hover:text-foreground"
+                ? "bg-primary text-primary-foreground shadow-cyan-glow"
+                : "glass text-muted-foreground hover:text-foreground hover:bg-secondary"
             }
           `}
         >

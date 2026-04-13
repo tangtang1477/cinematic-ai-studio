@@ -3,9 +3,9 @@ const HeroSection = () => {
     <section className="relative pt-20 pb-12 text-center overflow-hidden">
       {/* Gradient mesh background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-[-20%] left-[10%] w-[500px] h-[500px] rounded-full bg-primary/[0.07] blur-[100px]" />
-        <div className="absolute top-[-10%] right-[15%] w-[400px] h-[400px] rounded-full bg-purple-400/[0.06] blur-[100px]" />
-        <div className="absolute bottom-0 left-[40%] w-[600px] h-[300px] rounded-full bg-cyan-400/[0.05] blur-[120px]" />
+        <div className="absolute top-[-20%] left-[10%] w-[500px] h-[500px] rounded-full bg-primary/[0.08] blur-[120px]" />
+        <div className="absolute top-[-10%] right-[15%] w-[400px] h-[400px] rounded-full bg-cyan-400/[0.06] blur-[120px]" />
+        <div className="absolute bottom-0 left-[40%] w-[600px] h-[300px] rounded-full bg-primary/[0.04] blur-[140px]" />
       </div>
 
       <div className="max-w-4xl mx-auto px-6">
@@ -17,7 +17,7 @@ const HeroSection = () => {
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.08] mb-6">
           Create Cinematic
           <br />
-          <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-primary via-cyan-300 to-teal-400 bg-clip-text text-transparent">
             AI Videos
           </span>{" "}
           in Minutes

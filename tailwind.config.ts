@@ -67,9 +67,10 @@ export default {
         "3xl": "1.5rem",
       },
       boxShadow: {
-        glass: "0 8px 32px 0 rgba(99, 102, 241, 0.06)",
-        "glass-lg": "0 16px 48px 0 rgba(99, 102, 241, 0.08)",
-        "card-hover": "0 20px 60px -12px rgba(99, 102, 241, 0.15)",
+        glass: "0 8px 32px 0 rgba(113, 240, 246, 0.06)",
+        "glass-lg": "0 16px 48px 0 rgba(113, 240, 246, 0.08)",
+        "card-hover": "0 0 24px rgba(113, 240, 246, 0.15), 0 20px 60px -12px rgba(0, 0, 0, 0.4)",
+        "cyan-glow": "0 0 20px rgba(113, 240, 246, 0.3)",
       },
       keyframes: {
         "accordion-down": {
