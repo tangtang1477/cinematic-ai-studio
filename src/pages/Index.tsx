@@ -19,47 +19,34 @@ const Index = () => {
 
   const handleTry = useCallback((templatePrompt: string) => {
     setPrompt(templatePrompt);
-    document.getElementById("creation-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   return (
     <div className="min-h-screen bg-background flex">
       <AppSidebar />
-      <div className="flex-1 ml-[88px] overflow-y-auto hide-scrollbar px-6 py-8">
+      <div className="flex-1 ml-[88px] overflow-y-auto hide-scrollbar px-6 py-8 pb-40">
         <div className="max-w-[1796px] mx-auto flex flex-col">
-          {/* Hero */}
           <HeroSection />
-
-          {/* Creation panel at top */}
-          <div style={{ marginBottom: 32 }}>
-            <CreationPanel
-              prompt={prompt}
-              onPromptChange={setPrompt}
-              duration={duration}
-              onDurationChange={setDuration}
-              orientation={orientation}
-              onOrientationChange={setOrientation}
-              voiceover={voiceover}
-              onVoiceoverChange={setVoiceover}
-            />
-          </div>
-
-          {/* Section title */}
-          <h2 className="text-[20px] font-bold text-foreground leading-7 mb-4">
-            Templates
-          </h2>
-
-          {/* Category filter */}
           <CategoryFilter selected={category} onSelect={setCategory} />
-
-          {/* Template grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
             {filtered.map((t) => (
               <TemplateCard key={t.id} template={t} onTry={handleTry} />
             ))}
           </div>
         </div>
       </div>
+
+      {/* Fixed bottom input bar */}
+      <CreationPanel
+        prompt={prompt}
+        onPromptChange={setPrompt}
+        duration={duration}
+        onDurationChange={setDuration}
+        orientation={orientation}
+        onOrientationChange={setOrientation}
+        voiceover={voiceover}
+        onVoiceoverChange={setVoiceover}
+      />
     </div>
   );
 };
