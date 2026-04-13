@@ -47,6 +47,10 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        "card-surface": "hsl(var(--card-surface) / 0.1)",
+        "card-surface-hover": "hsl(var(--card-surface) / 0.2)",
+        "text-dim": "hsl(var(--text-dim) / 0.5)",
+        "text-bright": "hsl(var(--text-dim) / 0.8)",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -62,15 +66,6 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        xl: "1rem",
-        "2xl": "1.25rem",
-        "3xl": "1.5rem",
-      },
-      boxShadow: {
-        glass: "0 8px 32px 0 rgba(113, 240, 246, 0.06)",
-        "glass-lg": "0 16px 48px 0 rgba(113, 240, 246, 0.08)",
-        "card-hover": "0 0 24px rgba(113, 240, 246, 0.15), 0 20px 60px -12px rgba(0, 0, 0, 0.4)",
-        "cyan-glow": "0 0 20px rgba(113, 240, 246, 0.3)",
       },
       keyframes: {
         "accordion-down": {

@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
+import AppSidebar from "@/components/AppSidebar";
 import HeroSection from "@/components/HeroSection";
+import CreationPanel from "@/components/CreationPanel";
 import CategoryFilter from "@/components/CategoryFilter";
 import TemplateCard from "@/components/TemplateCard";
-import CreationPanel from "@/components/CreationPanel";
 import { templates } from "@/data/templates";
 
 const Index = () => {
@@ -11,7 +12,6 @@ const Index = () => {
   const [duration, setDuration] = useState("2");
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const [voiceover, setVoiceover] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const filtered = category === "All"
     ? templates
@@ -23,30 +23,42 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <HeroSection />
-      <CategoryFilter selected={category} onSelect={setCategory} />
+    <div className="min-h-screen bg-background flex">
+      <AppSidebar />
+      <div className="flex-1 ml-[88px] overflow-y-auto hide-scrollbar px-6 py-8">
+        <div className="max-w-[1796px] mx-auto flex flex-col">
+          {/* Hero */}
+          <HeroSection />
 
-      {/* Template grid */}
-      <section className="max-w-7xl mx-auto px-6 mb-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filtered.map((t) => (
-            <TemplateCard key={t.id} template={t} onTry={handleTry} />
-          ))}
+          {/* Creation panel at top */}
+          <div style={{ marginBottom: 32 }}>
+            <CreationPanel
+              prompt={prompt}
+              onPromptChange={setPrompt}
+              duration={duration}
+              onDurationChange={setDuration}
+              orientation={orientation}
+              onOrientationChange={setOrientation}
+              voiceover={voiceover}
+              onVoiceoverChange={setVoiceover}
+            />
+          </div>
+
+          {/* Section title */}
+          <h2 className="text-[20px] font-bold text-foreground leading-7 mb-4">
+            Templates
+          </h2>
+
+          {/* Category filter */}
+          <CategoryFilter selected={category} onSelect={setCategory} />
+
+          {/* Template grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
+            {filtered.map((t) => (
+              <TemplateCard key={t.id} template={t} onTry={handleTry} />
+            ))}
+          </div>
         </div>
-      </section>
-
-      <div ref={panelRef}>
-        <CreationPanel
-          prompt={prompt}
-          onPromptChange={setPrompt}
-          duration={duration}
-          onDurationChange={setDuration}
-          orientation={orientation}
-          onOrientationChange={setOrientation}
-          voiceover={voiceover}
-          onVoiceoverChange={setVoiceover}
-        />
       </div>
     </div>
   );
