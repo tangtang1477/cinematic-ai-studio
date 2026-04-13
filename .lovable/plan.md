@@ -1,61 +1,121 @@
-# MovieFlow.ai — AI Video Generation Channel Page
+# Channel Page Redesign Plan
 
-## Overview
+## Issues to Fix
 
-Build a stunning, high-fidelity channel page for movieflow.ai featuring Apple-inspired glassmorphism, premium aesthetics, and full interactivity for browsing and applying AI video templates.
+1. **Hero title not centered** + subtitle too small/split into two lines
+2. **Color scheme too dark** — redesign without #71F0F6 cyan accent
+3. **No channel page identity** — users can't tell this is a "channel" page
+4. **Template cards** — change to 3:4 ratio, use uploaded images, remove tags, add frosted glass description overlay (Aideo "Inspiration Labs" style)
+5. **Layout restructure** — input box fixed at bottom (like Aideo Studio video), middle area shows scrollable template content with category switching
 
-## Design System
+## New Color Palette
 
-- **Palette**: Soft neutral background (#f8f9fc), frosted glass panels with white/blue-tinted transparency, accent color in cool violet-blue (#6366f1)
-- **Typography**: Clean sans-serif (Inter/system), strong hierarchy with large hero text, medium card titles, small labels
-- **Glass effects**: backdrop-blur, semi-transparent whites, subtle borders (white/10%), soft box-shadows
-- **Radius**: Large rounded corners (16-24px), pill buttons
-- **Spacing**: Generous whitespace, 8px grid system
+Replace the cyan #71F0F6 accent with a warmer, more premium palette:
 
-## Sections to Build
+- Background: pure black `#000`
+- Primary accent: soft violet-blue `hsl(245 58% 65%)` (#7C6BDB)
+- Glass surfaces: white at low opacity
+- Text: white with opacity tiers (90%, 60%, 40%)
 
-### 1. Hero Section
+## Layout Structure (Top to Bottom)
 
-- Large cinematic headline: "Create Cinematic AI Videos in Minutes"
-- Subtitle with premium tone about AI-powered video generation
-- Subtle gradient mesh background with soft animated feel
+```text
+┌──────────────────────────────────────────┐
+│ Sidebar (88px)  │  Main Content Area     │
+│                 │                         │
+│                 │  ┌─ Hero ─────────────┐ │
+│                 │  │ Channel title      │ │
+│                 │  │ (centered)         │ │
+│                 │  │ + subtitle (1 line)│ │
+│                 │  └────────────────────┘ │
+│                 │                         │
+│                 │  ┌─ Category Tabs ────┐ │
+│                 │  │ All | Image Play...│ │
+│                 │  └────────────────────┘ │
+│                 │                         │
+│                 │  ┌─ Template Grid ────┐ │
+│                 │  │ 3:4 cards with     │ │
+│                 │  │ image + glass desc │ │
+│                 │  │ (scrollable area)  │ │
+│                 │  └────────────────────┘ │
+│                 │                         │
+│                 │  ┌─ Fixed Input Bar ──┐ │
+│                 │  │ Prompt + controls  │ │
+│                 │  │ (fixed bottom)     │ │
+│                 │  └────────────────────┘ │
+└──────────────────────────────────────────┘
+```
 
-### 2. Category Filter Bar
+## Detailed Changes
 
-- Horizontal row of pill/chip buttons for categories (All, Image Play, Narrative, Music Video, Education, Commercial, 2D.3D.)
-- Clear default/hover/active/selected states with glass styling
-- Smooth transitions between states
+### 1. Hero Section (`HeroSection.tsx`)
 
-### 3. Template Card Grid
+- Center-align title and subtitle
+- Add channel identity text: "Channel" badge or label above the main title
+- Title: "Explore Creative Templates" (or similar channel-specific headline)
+- Subtitle: single line, 16px, 70% opacity — e.g. "Browse curated AI video templates and start creating in one click."
 
-- Responsive grid of template cards (3-4 columns)
-- Each card: gradient placeholder thumbnail, title, description, style tags, "Try this" button
-- Hover state: card lifts with shadow, "Try this" button appears/becomes prominent
-- Click "Try this" → template prompt auto-fills into the creation panel input box
-- ~8-12 sample templates with realistic AI video generation prompts
+### 2. Color System (`index.css`)
 
-### 4. Creation Panel (sticky/prominent)
+- Change `--primary` from `183 89% 69%` to `245 58% 65%` (violet-blue)
+- Update `--accent`, `--ring`, `--sidebar-primary`, `--sidebar-ring` accordingly
+- Update `.glass-btn` gradient colors from cyan `rgba(113,240,246,...)` to violet `rgba(124,107,219,...)`
 
-- Large frosted-glass panel with prompt textarea (pre-fillable via "Try this")
-- Controls in a clean row/grid:
-  - **Model**: Dropdown — "Seedance 2.0" (default), "Happy Horse" (disabled/greyed)
-  - **Language**: Dropdown — English default
-  - **Duration**: Segmented control — 1/2/3/6/10 min
-  - **Aspect Ratio**: Toggle — Portrait / Landscape
-  - **Voiceover**: Toggle switch — On/Off
-- "Generate Video" CTA button with accent color
-- All controls styled with glass aesthetic, proper disabled states
+### 3. Template Cards (`TemplateCard.tsx`)
 
-### 5. Interactions & State Management
+- Change aspect ratio to 3:4
+- Replace gradient backgrounds with uploaded images from the zip (copy to `src/assets/`)
+- Remove tags display
+- Add bottom frosted glass overlay (Aideo "Inspiration Labs" style):
+  - Bottom gradient fade from transparent to black
+  - Glass panel at bottom with `backdrop-filter: blur(16px)`, `rgba(255,255,255,0.08)` background
+  - 3 lines of description text (14px, line-clamp-3)
+  - Title above description
+- "Try this" button appears on hover over the glass panel
 
-- React state for: selected category filter, active template prompt, all creation settings
-- Clicking "Try this" scrolls to creation panel and fills prompt
-- Smooth scroll behavior, hover animations, transitions
+### 4. Template Data (`templates.ts`)
 
-## Technical Approach
+- Remove `tags` field (or keep but don't display)
+- Remove `gradient` field, add `image` field referencing uploaded assets
+- Update descriptions to be more detailed (3 lines worth)
 
-- Single `Index.tsx` page with extracted components
-- Tailwind CSS for all styling including custom glass utilities
-- Framer Motion or CSS transitions for hover/scroll effects
-- Mock data for templates
-- Fully responsive desktop-first layout
+### 5. Category Filter (`CategoryFilter.tsx`)
+
+- Change existing pill style to the reference video's style and update accent color to new violet-blue
+
+### 6. Creation Panel / Input Bar (`CreationPanel.tsx`)
+
+- **Fixed to bottom** of the viewport (not in scroll flow)
+- Redesign to match Aideo Studio input box:
+  - Rounded pill shape (`border-radius: 25px`)
+  - Glass effect with `inset box-shadow` and `backdrop-filter: blur(12px)`
+  - Prompt input area (contentEditable or textarea)
+  - Bottom row: Model pill, Language pill, Duration pill, Ratio toggle, "Make" CTA button
+  - All controls as compact pill-shaped dropdowns in a single row
+- Narrower and more compact than current design
+
+### 7. Page Layout (`Index.tsx`)
+
+- Main content area needs `padding-bottom` to account for fixed input bar
+- Remove `CreationPanel` from the scroll flow, render it as a fixed overlay at bottom
+- Scrollable area contains: Hero → CategoryFilter → Template Grid
+
+### 8. Asset Integration
+
+- Extract images from uploaded `3比4的图片库.zip`
+- Copy 10-12 images to `src/assets/` for template card thumbnails
+- Import and assign to template data
+
+## Files to Create/Modify
+
+
+| File                                | Action                                                |
+| ----------------------------------- | ----------------------------------------------------- |
+| `src/index.css`                     | Update color variables, glass-btn colors              |
+| `src/components/HeroSection.tsx`    | Center layout, channel identity, single-line subtitle |
+| `src/components/TemplateCard.tsx`   | 3:4 ratio, image bg, glass overlay, no tags           |
+| `src/components/CreationPanel.tsx`  | Fixed bottom bar, Aideo-style pill input              |
+| `src/components/CategoryFilter.tsx` | Minor color updates                                   |
+| `src/pages/Index.tsx`               | Layout restructure, fixed bottom input                |
+| `src/data/templates.ts`             | Add image refs, update descriptions                   |
+| `src/assets/template-*.jpg`         | Extracted from uploaded zip                           |
