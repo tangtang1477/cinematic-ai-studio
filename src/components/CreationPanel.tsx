@@ -1,13 +1,4 @@
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Wand2, Monitor, Smartphone } from "lucide-react";
+import { Wand2 } from "lucide-react";
 
 interface CreationPanelProps {
   prompt: string;
@@ -29,166 +20,91 @@ const CreationPanel = ({
   onDurationChange,
   orientation,
   onOrientationChange,
-  voiceover,
-  onVoiceoverChange,
 }: CreationPanelProps) => {
   return (
-    <section id="creation-panel" className="w-full">
+    <div
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-88px-48px)]"
+      style={{ maxWidth: 800, marginLeft: "calc(88px / 2)" }}
+    >
       <div
-        className="rounded-2xl overflow-hidden"
+        className="rounded-3xl overflow-hidden"
         style={{
-          background: "hsl(var(--foreground) / 0.05)",
-          border: "1px solid hsl(var(--foreground) / 0.08)",
+          background: "rgba(255,255,255,0.06)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
         }}
       >
-        {/* Prompt input area */}
-        <div className="relative group">
+        {/* Input area */}
+        <div className="px-5 pt-4 pb-2">
           <textarea
             value={prompt}
             onChange={(e) => onPromptChange(e.target.value)}
             placeholder="Describe the video you want to create..."
-            rows={4}
-            className="w-full bg-transparent text-[14px] text-foreground placeholder:text-foreground/30 resize-none px-5 py-4 focus:outline-none leading-relaxed"
-          />
-
-          {/* Bottom bar inside input */}
-          <div
-            className="flex items-center justify-between px-5 py-3"
-            style={{ borderTop: "1px solid hsl(var(--foreground) / 0.06)" }}
-          >
-            <span className="text-[12px] text-foreground/30">
-              {prompt.length > 0 ? `${prompt.length} characters` : 'Click "Try this" on any template to auto-fill'}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-              <span className="text-[10px] text-foreground/30">AI-enhanced</span>
-            </div>
-          </div>
-
-          {/* Focus glow border */}
-          <div className="absolute -inset-[1px] rounded-2xl pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"
-            style={{
-              background: "linear-gradient(135deg, hsl(var(--primary) / 0.3), transparent, hsl(var(--primary) / 0.15))",
-              WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-              WebkitMaskComposite: "xor",
-              maskComposite: "exclude",
-              padding: "1px",
-            }}
+            rows={2}
+            className="w-full bg-transparent text-[14px] text-foreground placeholder:text-foreground/25
+              resize-none focus:outline-none leading-relaxed"
           />
         </div>
 
         {/* Controls row */}
-        <div
-          className="px-5 py-4 flex flex-wrap items-end gap-5"
-          style={{ borderTop: "1px solid hsl(var(--foreground) / 0.06)" }}
-        >
-          {/* Model */}
-          <div className="space-y-1.5">
-            <Label className="text-[12px] text-foreground/40">Model</Label>
-            <Select defaultValue="seedance">
-              <SelectTrigger
-                className="rounded-lg text-[13px] h-8 w-[140px] border-foreground/10 bg-foreground/5 text-foreground"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="seedance">Seedance 2.0</SelectItem>
-                <SelectItem value="happyhorse" disabled>Happy Horse</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="px-5 pb-4 flex items-center gap-2 flex-wrap">
+          {/* Model pill */}
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] text-foreground/60"
+            style={{ background: "rgba(255,255,255,0.06)" }}
+          >
+            Seedance 2.0
           </div>
 
-          {/* Language */}
-          <div className="space-y-1.5">
-            <Label className="text-[12px] text-foreground/40">Language</Label>
-            <Select defaultValue="en">
-              <SelectTrigger
-                className="rounded-lg text-[13px] h-8 w-[110px] border-foreground/10 bg-foreground/5 text-foreground"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="zh">中文</SelectItem>
-                <SelectItem value="ja">日本語</SelectItem>
-                <SelectItem value="es">Español</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Duration */}
-          <div className="space-y-1.5">
-            <Label className="text-[12px] text-foreground/40">Duration</Label>
-            <div className="flex gap-1">
-              {durations.map((d) => (
-                <button
-                  key={d}
-                  onClick={() => onDurationChange(d)}
-                  className={`h-8 px-2.5 rounded-lg text-[13px] font-medium transition-all duration-150 ${
-                    duration === d
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-foreground/5 text-foreground/50 hover:text-foreground hover:bg-foreground/10 border border-foreground/10"
+          {/* Duration pills */}
+          <div className="flex gap-1">
+            {durations.map((d) => (
+              <button
+                key={d}
+                onClick={() => onDurationChange(d)}
+                className={`px-2.5 py-1.5 rounded-full text-[12px] font-medium transition-all
+                  ${duration === d
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground/40 hover:text-foreground/70"
                   }`}
-                >
-                  {d}m
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Aspect Ratio */}
-          <div className="space-y-1.5">
-            <Label className="text-[12px] text-foreground/40">Aspect Ratio</Label>
-            <div className="flex gap-1">
-              <button
-                onClick={() => onOrientationChange("landscape")}
-                className={`h-8 px-3 rounded-lg text-[13px] font-medium flex items-center gap-1.5 transition-all duration-150 ${
-                  orientation === "landscape"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-foreground/5 text-foreground/50 hover:text-foreground hover:bg-foreground/10 border border-foreground/10"
-                }`}
+                style={duration !== d ? { background: "rgba(255,255,255,0.04)" } : {}}
               >
-                <Monitor className="w-3 h-3" />
-                16:9
+                {d}m
               </button>
+            ))}
+          </div>
+
+          {/* Ratio toggle */}
+          <div className="flex gap-1">
+            {(["landscape", "portrait"] as const).map((o) => (
               <button
-                onClick={() => onOrientationChange("portrait")}
-                className={`h-8 px-3 rounded-lg text-[13px] font-medium flex items-center gap-1.5 transition-all duration-150 ${
-                  orientation === "portrait"
+                key={o}
+                onClick={() => onOrientationChange(o)}
+                className={`px-2.5 py-1.5 rounded-full text-[12px] font-medium transition-all
+                  ${orientation === o
                     ? "bg-primary text-primary-foreground"
-                    : "bg-foreground/5 text-foreground/50 hover:text-foreground hover:bg-foreground/10 border border-foreground/10"
-                }`}
+                    : "text-foreground/40 hover:text-foreground/70"
+                  }`}
+                style={orientation !== o ? { background: "rgba(255,255,255,0.04)" } : {}}
               >
-                <Smartphone className="w-3 h-3" />
-                9:16
+                {o === "landscape" ? "16:9" : "9:16"}
               </button>
-            </div>
+            ))}
           </div>
 
-          {/* Voiceover */}
-          <div className="space-y-1.5">
-            <Label className="text-[12px] text-foreground/40">Voiceover</Label>
-            <div className="flex items-center h-8 gap-2">
-              <Switch checked={voiceover} onCheckedChange={onVoiceoverChange} />
-              <span className="text-[13px] text-foreground/50">
-                {voiceover ? "On" : "Off"}
-              </span>
-            </div>
-          </div>
+          {/* Spacer */}
+          <div className="flex-1" />
 
-          {/* Spacer + Generate button */}
-          <div className="flex-1 flex justify-end">
-            <button
-              className="glass-btn flex items-center justify-center gap-2 h-9 px-6 rounded-lg
-                text-primary-foreground font-medium text-[14px]"
-            >
-              <Wand2 className="w-4 h-4 relative z-10" />
-              <span className="relative z-10">Generate</span>
-            </button>
-          </div>
+          {/* Generate button */}
+          <button className="glass-btn flex items-center gap-2 px-5 py-2 rounded-full text-foreground font-medium text-[13px]">
+            <Wand2 className="w-4 h-4 relative z-10" />
+            <span className="relative z-10">Make</span>
+          </button>
         </div>
       </div>
-    </section>
+    </div>
   );
 };
 
