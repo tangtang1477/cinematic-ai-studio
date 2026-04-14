@@ -42,11 +42,6 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
       {/* Solid frosted glass overlay at bottom */}
       <div
         className="absolute bottom-0 left-0 right-0 transition-all duration-200"
-        style={{
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          background: "rgba(0,0,0,0.45)",
-        }}
       >
         {!hovered ? (
           <div className="px-3 pt-[12px] pb-[12px]">
