@@ -26,10 +26,20 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         loading="lazy"
       />
 
-      {/* Bottom gradient fade */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+      {/* Gradient fade above glass panel */}
+      <div
+        className="absolute bottom-0 left-0 right-0 pointer-events-none"
+        style={{ height: "50%" }}
+      >
+        <div
+          className="w-full h-full"
+          style={{
+            background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.7) 100%)",
+          }}
+        />
+      </div>
 
-      {/* Frosted glass overlay at bottom - full width */}
+      {/* Frosted glass overlay at bottom */}
       <div
         className="absolute bottom-0 left-0 right-0 transition-all duration-200"
         style={{
@@ -37,17 +47,17 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
           WebkitBackdropFilter: "blur(16px)",
           background: "rgba(255,255,255,0.08)",
           borderTop: "1px solid rgba(255,255,255,0.06)",
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 30%)",
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 30%)",
         }}
       >
         {!hovered ? (
-          /* Default: 3-line description only */
           <div className="px-3 py-3">
             <p className="text-[12px] text-foreground/60 leading-[18px] line-clamp-3">
               {template.description}
             </p>
           </div>
         ) : (
-          /* Hover: only Try this button */
           <div className="px-3 py-2.5 flex justify-center">
             <button
               onClick={(e) => { e.stopPropagation(); onTry(template.prompt); }}
