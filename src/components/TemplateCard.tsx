@@ -26,17 +26,16 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         loading="lazy"
       />
 
-      {/* Gradient blur transition zone above glass panel */}
+      {/* Gradient blur transition zone — fades blur+tint from transparent into the solid glass panel */}
       <div
-        className="absolute left-0 right-0 pointer-events-none"
+        className="absolute left-0 right-0 bottom-0 pointer-events-none"
         style={{
-          bottom: "calc(12px + 54px)",
-          height: "40px",
-          background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.45) 100%)",
+          height: "120px",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
-          maskImage: "linear-gradient(to bottom, transparent 0%, black 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 100%)",
+          background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.45) 40%)",
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 40%)",
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 40%)",
         }}
       />
 
