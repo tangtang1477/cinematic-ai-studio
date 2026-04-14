@@ -47,18 +47,18 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
           WebkitBackdropFilter: "blur(16px)",
           background: "rgba(0,0,0,0.45)",
           borderTop: "1px solid rgba(255,255,255,0.06)",
-          maskImage: "linear-gradient(to bottom, transparent 0%, black 20%)",
-          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 20%)",
+          maskImage: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 25%, rgba(0,0,0,0.7) 50%, black 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 25%, rgba(0,0,0,0.7) 50%, black 100%)",
         }}
       >
         {!hovered ? (
-          <div className="px-3 py-3">
+          <div className="px-3 pt-[12px] pb-[12px]">
             <p className="text-[12px] text-foreground/60 leading-[18px] line-clamp-3">
               {template.description}
             </p>
           </div>
         ) : (
-          <div className="px-3 py-2.5 flex justify-center">
+          <div className="px-3 pt-[12px] pb-[12px] flex justify-center">
             <button
               onClick={(e) => { e.stopPropagation(); onTry(template.prompt); }}
               className="glass-btn flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg
