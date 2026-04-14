@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Wand2, Monitor, Smartphone, ChevronDown, Mic } from "lucide-react";
+import { Wand2, ChevronDown, Mic } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
@@ -9,13 +8,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import iconTime from "@/assets/icon-time.svg";
 
+export type AspectRatio = "16:9" | "9:16" | "3:4" | "4:3";
+
 interface CreationPanelProps {
   prompt: string;
   onPromptChange: (val: string) => void;
   duration: string;
   onDurationChange: (val: string) => void;
-  orientation: "landscape" | "portrait";
-  onOrientationChange: (val: "landscape" | "portrait") => void;
+  aspectRatio: AspectRatio;
+  onAspectRatioChange: (val: AspectRatio) => void;
   voiceover: boolean;
   onVoiceoverChange: (val: boolean) => void;
 }
@@ -28,28 +29,57 @@ const durations = [
   { value: "10", label: "10 min" },
 ];
 
+const aspectRatios: { value: AspectRatio; label: string; w: number; h: number }[] = [
+  { value: "16:9", label: "16:9", w: 16, h: 9 },
+  { value: "9:16", label: "9:16", w: 9, h: 16 },
+  { value: "4:3", label: "4:3", w: 4, h: 3 },
+  { value: "3:4", label: "3:4", w: 3, h: 4 },
+];
+
+const RatioIcon = ({ w, h, size = 14 }: { w: number; h: number; size?: number }) => {
+  const maxDim = size;
+  const scale = maxDim / Math.max(w, h);
+  const rw = w * scale;
+  const rh = h * scale;
+  return (
+    <svg width={maxDim} height={maxDim} viewBox={`0 0 ${maxDim} ${maxDim}`}>
+      <rect
+        x={(maxDim - rw) / 2}
+        y={(maxDim - rh) / 2}
+        width={rw}
+        height={rh}
+        rx={1.5}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      />
+    </svg>
+  );
+};
+
 const CreationPanel = ({
   prompt,
   onPromptChange,
   duration,
   onDurationChange,
-  orientation,
-  onOrientationChange,
+  aspectRatio,
+  onAspectRatioChange,
   voiceover,
   onVoiceoverChange,
 }: CreationPanelProps) => {
   const currentDuration = durations.find((d) => d.value === duration);
+  const currentRatio = aspectRatios.find((r) => r.value === aspectRatio) || aspectRatios[0];
 
   return (
-    <div className="w-full px-4 pb-4">
+    <div className="w-full max-w-[720px] mx-auto px-4 pt-4 pb-2">
       <div
         className="rounded-2xl overflow-hidden"
         style={{
           background: "rgba(255,255,255,0.06)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.4)",
+          border: "1px solid rgba(113,240,246,0.1)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(113,240,246,0.03)",
         }}
       >
         {/* Input area */}
@@ -57,7 +87,7 @@ const CreationPanel = ({
           <textarea
             value={prompt}
             onChange={(e) => onPromptChange(e.target.value)}
-            placeholder="Describe the video you want to create..."
+            placeholder="Describe the 3D video you want to create..."
             rows={2}
             className="w-full bg-transparent text-[14px] text-foreground placeholder:text-foreground/25
               resize-none focus:outline-none leading-relaxed"
@@ -128,34 +158,39 @@ const CreationPanel = ({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Aspect ratio toggle */}
-          <div
-            className="flex rounded-full overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.06)" }}
-          >
-            <button
-              onClick={() => onOrientationChange("landscape")}
-              className={`flex items-center gap-1 px-3 py-1.5 text-[12px] transition-all ${
-                orientation === "landscape"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-foreground/40 hover:text-foreground/70"
-              }`}
+          {/* Aspect ratio dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90"
+                style={{ background: "rgba(255,255,255,0.06)" }}
+              >
+                <RatioIcon w={currentRatio.w} h={currentRatio.h} />
+                {currentRatio.label}
+                <ChevronDown className="w-3 h-3 opacity-50" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="min-w-[120px]"
+              style={{
+                background: "rgba(30,30,30,0.95)",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
             >
-              <Monitor className="w-3.5 h-3.5" />
-              <span>16:9</span>
-            </button>
-            <button
-              onClick={() => onOrientationChange("portrait")}
-              className={`flex items-center gap-1 px-3 py-1.5 text-[12px] transition-all ${
-                orientation === "portrait"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-foreground/40 hover:text-foreground/70"
-              }`}
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>9:16</span>
-            </button>
-          </div>
+              {aspectRatios.map((r) => (
+                <DropdownMenuItem
+                  key={r.value}
+                  onClick={() => onAspectRatioChange(r.value)}
+                  className={`text-[13px] flex items-center gap-2 ${aspectRatio === r.value ? "text-primary" : "text-foreground/70"}`}
+                >
+                  <RatioIcon w={r.w} h={r.h} />
+                  {r.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Voiceover toggle */}
           <div className="flex items-center gap-1.5 px-2">
