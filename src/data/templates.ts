@@ -29,7 +29,8 @@ export const categories = [
   "Music Video",
   "Education",
   "Commercial",
-  "2D/3D",
+  "2D",
+  "3D",
 ] as const;
 
 export const templates: Template[] = [
