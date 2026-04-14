@@ -26,29 +26,27 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         loading="lazy"
       />
 
-      {/* Gradient fade above glass panel */}
+      {/* Gradient transition zone above glass panel */}
       <div
-        className="absolute bottom-0 left-0 right-0 pointer-events-none"
-        style={{ height: "50%" }}
-      >
-        <div
-          className="w-full h-full"
-          style={{
-            background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.7) 100%)",
-          }}
-        />
-      </div>
+        className="absolute left-0 right-0 pointer-events-none"
+        style={{
+          bottom: "calc(12px + 54px)",
+          height: "40px",
+          background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.45) 100%)",
+          backdropFilter: "blur(0px)",
+          WebkitBackdropFilter: "blur(0px)",
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 100%)",
+        }}
+      />
 
-      {/* Frosted glass overlay at bottom */}
+      {/* Solid frosted glass overlay at bottom */}
       <div
         className="absolute bottom-0 left-0 right-0 transition-all duration-200"
         style={{
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           background: "rgba(0,0,0,0.45)",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-          maskImage: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 25%, rgba(0,0,0,0.7) 50%, black 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 25%, rgba(0,0,0,0.7) 50%, black 100%)",
         }}
       >
         {!hovered ? (
