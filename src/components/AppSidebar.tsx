@@ -1,11 +1,16 @@
 import { useState } from "react";
-import { Home, Film, Layers, FolderOpen, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import iconHome from "@/assets/icon-home.svg";
+import iconChannel from "@/assets/icon-channel.svg";
+import iconToolkit from "@/assets/icon-toolkit.svg";
+import iconAssets from "@/assets/icon-assets.svg";
+import logoM from "@/assets/logo-m.png";
 
 const NAV_ITEMS = [
-  { id: "home", icon: Home, label: "Home" },
-  { id: "channel", icon: Film, label: "Channel" },
-  { id: "toolkit", icon: Layers, label: "Toolkit" },
-  { id: "assets", icon: FolderOpen, label: "Assets" },
+  { id: "home", icon: iconHome, label: "Home" },
+  { id: "channel", icon: iconChannel, label: "Channel" },
+  { id: "toolkit", icon: iconToolkit, label: "Toolkit" },
+  { id: "assets", icon: iconAssets, label: "Assets" },
 ];
 
 const AppSidebar = () => {
@@ -15,8 +20,8 @@ const AppSidebar = () => {
   return (
     <div className="fixed left-0 top-0 z-50 h-screen w-[88px]">
       {/* Logo */}
-      <div className="absolute left-8 top-6 cursor-pointer">
-        <span className="text-primary font-bold text-[18px]">M</span>
+      <div className="absolute left-4 top-4 cursor-pointer">
+        <img src={logoM} alt="MovieFlow" className="w-10 h-10 object-contain" />
       </div>
 
       {/* Plus button */}
@@ -47,7 +52,6 @@ const AppSidebar = () => {
         {NAV_ITEMS.map((item) => {
           const isActive = activeId === item.id;
           const isHovered = hoveredId === item.id;
-          const Icon = item.icon;
 
           return (
             <div
@@ -71,9 +75,16 @@ const AppSidebar = () => {
                 />
               )}
               <button className="relative w-6 h-6 flex items-center justify-center transition-all active:scale-90">
-                <Icon
-                  size={20}
-                  className={isActive || isHovered ? "text-primary" : "text-foreground/50"}
+                <img
+                  src={item.icon}
+                  alt={item.label}
+                  className="w-5 h-5 transition-opacity"
+                  style={{
+                    opacity: isActive || isHovered ? 1 : 0.5,
+                    filter: isActive || isHovered
+                      ? "brightness(1.5) saturate(1.2)"
+                      : "none",
+                  }}
                 />
               </button>
 
