@@ -26,29 +26,28 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         loading="lazy"
       />
 
-      {/* Gradient blur transition zone above glass panel */}
-      <div
-        className="absolute left-0 right-0 pointer-events-none"
-        style={{
-          bottom: "calc(12px + 54px)",
-          height: "40px",
-          background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.45) 100%)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          maskImage: "linear-gradient(to bottom, transparent 0%, black 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 100%)",
-        }}
-      />
-
       {/* Solid frosted glass overlay at bottom */}
       <div
-        className="absolute bottom-0 left-0 right-0 transition-all duration-200"
+        className="absolute bottom-0 left-0 right-0 relative transition-all duration-200"
         style={{
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           background: "rgba(0,0,0,0.45)",
         }}
       >
+        {/* Gradient blur transition on top edge */}
+        <div className="absolute left-0 right-0 top-[-40px] h-[40px] pointer-events-none overflow-hidden">
+          <div
+            className="absolute inset-0"
+            style={{
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              background: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.12) 35%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0.45) 100%)",
+              maskImage: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.28) 30%, rgba(0,0,0,0.72) 68%, black 100%)",
+              WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.28) 30%, rgba(0,0,0,0.72) 68%, black 100%)",
+            }}
+          />
+        </div>
         {!hovered ? (
           <div className="px-3 pt-[12px] pb-[12px]">
             <p className="text-[12px] text-foreground/60 leading-[18px] line-clamp-3">
