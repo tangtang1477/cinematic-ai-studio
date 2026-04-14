@@ -140,7 +140,7 @@ export const templates: Template[] = [
     description: "Surreal, liminal dreamscapes that blur the line between reality and subconscious. Soft focus, impossible geometry, and nostalgic color tones create an ethereal atmosphere.",
     prompt: "Surreal dreamcore visuals with liminal spaces, soft focus, impossible geometry, nostalgic washed-out color tones, ethereal atmosphere, uncanny and beautiful.",
     tags: [],
-    category: "2D/3D",
+    category: "3D",
     gradient: "",
     image: template11,
   },
