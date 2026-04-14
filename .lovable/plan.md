@@ -1,121 +1,56 @@
-# Channel Page Redesign Plan
+# Channel Page Layout & Controls Redesign
 
-## Issues to Fix
+## Changes
 
-1. **Hero title not centered** + subtitle too small/split into two lines
-2. **Color scheme too dark** — redesign without #71F0F6 cyan accent
-3. **No channel page identity** — users can't tell this is a "channel" page
-4. **Template cards** — change to 3:4 ratio, use uploaded images, remove tags, add frosted glass description overlay (Aideo "Inspiration Labs" style)
-5. **Layout restructure** — input box fixed at bottom (like Aideo Studio video), middle area shows scrollable template content with category switching
+### 1. Layout: Fixed header + fixed footer, only cards scroll
 
-## New Color Palette
+Current: entire page scrolls including hero and filter.
+Target: Hero + CategoryFilter fixed at top, CreationPanel fixed at bottom, only the template grid scrolls in between.
 
-Replace the cyan #71F0F6 accent with a warmer, more premium palette:
+**Index.tsx** restructure:
 
-- Background: pure black `#000`
-- Primary accent: soft violet-blue `hsl(245 58% 65%)` (#7C6BDB)
-- Glass surfaces: white at low opacity
-- Text: white with opacity tiers (90%, 60%, 40%)
+- Wrap Hero + CategoryFilter in a fixed/sticky top container (below sidebar level)
+- Template grid in a scrollable middle area with `overflow-y: auto` and padding for top/bottom fixed sections
+- CreationPanel fixed at bottom, **full width** of content area (no max-width 800px constraint)
 
-## Layout Structure (Top to Bottom)
+### 2. Hero: Remove "Channel" badge, move up
 
-```text
-┌──────────────────────────────────────────┐
-│ Sidebar (88px)  │  Main Content Area     │
-│                 │                         │
-│                 │  ┌─ Hero ─────────────┐ │
-│                 │  │ Channel title      │ │
-│                 │  │ (centered)         │ │
-│                 │  │ + subtitle (1 line)│ │
-│                 │  └────────────────────┘ │
-│                 │                         │
-│                 │  ┌─ Category Tabs ────┐ │
-│                 │  │ All | Image Play...│ │
-│                 │  └────────────────────┘ │
-│                 │                         │
-│                 │  ┌─ Template Grid ────┐ │
-│                 │  │ 3:4 cards with     │ │
-│                 │  │ image + glass desc │ │
-│                 │  │ (scrollable area)  │ │
-│                 │  └────────────────────┘ │
-│                 │                         │
-│                 │  ┌─ Fixed Input Bar ──┐ │
-│                 │  │ Prompt + controls  │ │
-│                 │  │ (fixed bottom)     │ │
-│                 │  └────────────────────┘ │
-└──────────────────────────────────────────┘
-```
+**HeroSection.tsx**:
 
-## Detailed Changes
+- Remove the "Channel" pill badge entirely
+- Reduce top padding (py-10 → py-4 or similar) to move title up
+- Keep centered title + single-line subtitle
 
-### 1. Hero Section (`HeroSection.tsx`)
+### 3. CreationPanel redesign
 
-- Center-align title and subtitle
-- Add channel identity text: "Channel" badge or label above the main title
-- Title: "Explore Creative Templates" (or similar channel-specific headline)
-- Subtitle: single line, 16px, 70% opacity — e.g. "Browse curated AI video templates and start creating in one click."
+**Full-width**: Remove `maxWidth: 800` and centering transforms. Make it span the full width of the content area (minus sidebar).
 
-### 2. Color System (`index.css`)
+**Controls row updates**:
 
-- Change `--primary` from `183 89% 69%` to `245 58% 65%` (violet-blue)
-- Update `--accent`, `--ring`, `--sidebar-primary`, `--sidebar-ring` accordingly
-- Update `.glass-btn` gradient colors from cyan `rgba(113,240,246,...)` to violet `rgba(124,107,219,...)`
+- **Model selector**: "Seedance 2.0" as a dropdown button (using Popover or DropdownMenu). Clicking opens a dropdown with "Seedance 2.0" (selected) and "Happy Horse" (greyed/disabled)
+- **Duration**: Change from pill buttons to a dropdown selector with the uploaded clock icon (`time.svg`). Options: 1 min/2 min/3 min/6 min/10 min, default "1 min"
+- **Aspect ratio**: Replace text pills with icons — a landscape rectangle icon（monitor） and portrait rectangle icon（iPhone）, presented as a toggle/segmented control
+- **Voiceover toggle**: Add back the voiceover on/off switch (was removed). Use a Switch component with label
+- **Make button**: Keep existing glass-btn style
 
-### 3. Template Cards (`TemplateCard.tsx`)
+### 4. Template card glass overlay gradient fix
 
-- Change aspect ratio to 3:4
-- Replace gradient backgrounds with uploaded images from the zip (copy to `src/assets/`)
-- Remove tags display
-- Add bottom frosted glass overlay (Aideo "Inspiration Labs" style):
-  - Bottom gradient fade from transparent to black
-  - Glass panel at bottom with `backdrop-filter: blur(16px)`, `rgba(255,255,255,0.08)` background
-  - 3 lines of description text (14px, line-clamp-3)
-  - Title above description
-- "Try this" button appears on hover over the glass panel
+**TemplateCard.tsx**: The frosted glass overlay at the bottom currently has a hard edge. Add a gradient blur transition on the upper portion:
 
-### 4. Template Data (`templates.ts`)
+- Add a separate gradient overlay div above the glass panel that fades from transparent to the glass background
+- Or use a `mask-image` gradient on the glass panel so the top edge fades smoothly
 
-- Remove `tags` field (or keep but don't display)
-- Remove `gradient` field, add `image` field referencing uploaded assets
-- Update descriptions to be more detailed (3 lines worth)
+### 5. Asset: Copy time.svg icon
 
-### 5. Category Filter (`CategoryFilter.tsx`)
+Copy the uploaded `time.svg` to `src/assets/icon-time.svg` for use in the duration dropdown.
 
-- Change existing pill style to the reference video's style and update accent color to new violet-blue
-
-### 6. Creation Panel / Input Bar (`CreationPanel.tsx`)
-
-- **Fixed to bottom** of the viewport (not in scroll flow)
-- Redesign to match Aideo Studio input box:
-  - Rounded pill shape (`border-radius: 25px`)
-  - Glass effect with `inset box-shadow` and `backdrop-filter: blur(12px)`
-  - Prompt input area (contentEditable or textarea)
-  - Bottom row: Model pill, Language pill, Duration pill, Ratio toggle, "Make" CTA button
-  - All controls as compact pill-shaped dropdowns in a single row
-- Narrower and more compact than current design
-
-### 7. Page Layout (`Index.tsx`)
-
-- Main content area needs `padding-bottom` to account for fixed input bar
-- Remove `CreationPanel` from the scroll flow, render it as a fixed overlay at bottom
-- Scrollable area contains: Hero → CategoryFilter → Template Grid
-
-### 8. Asset Integration
-
-- Extract images from uploaded `3比4的图片库.zip`
-- Copy 10-12 images to `src/assets/` for template card thumbnails
-- Import and assign to template data
-
-## Files to Create/Modify
+## Files to Modify
 
 
-| File                                | Action                                                |
-| ----------------------------------- | ----------------------------------------------------- |
-| `src/index.css`                     | Update color variables, glass-btn colors              |
-| `src/components/HeroSection.tsx`    | Center layout, channel identity, single-line subtitle |
-| `src/components/TemplateCard.tsx`   | 3:4 ratio, image bg, glass overlay, no tags           |
-| `src/components/CreationPanel.tsx`  | Fixed bottom bar, Aideo-style pill input              |
-| `src/components/CategoryFilter.tsx` | Minor color updates                                   |
-| `src/pages/Index.tsx`               | Layout restructure, fixed bottom input                |
-| `src/data/templates.ts`             | Add image refs, update descriptions                   |
-| `src/assets/template-*.jpg`         | Extracted from uploaded zip                           |
+| File                               | Changes                                                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------------- |
+| `src/assets/icon-time.svg`         | New — copy from upload                                                                 |
+| `src/pages/Index.tsx`              | Fixed top/bottom layout, scrollable middle                                             |
+| `src/components/HeroSection.tsx`   | Remove Channel badge, reduce top padding                                               |
+| `src/components/CreationPanel.tsx` | Full-width, model dropdown, duration dropdown with icon, ratio icons, voiceover switch |
+| `src/components/TemplateCard.tsx`  | Gradient fade on glass overlay top edge                                                |
