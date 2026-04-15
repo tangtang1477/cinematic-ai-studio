@@ -1,40 +1,51 @@
 
 
-## 问题分析
+## 问题总结
 
-1. **动效太快**：当前 `cardFlight` 和 `cardFlip` 都是 1.6s，需要加长到 ~2.4s，并调整缓动曲线让放大翻转过程更明显
-2. **图片预加载未生效**：虽然有 `preloadTemplateImages()`，但 `TemplateCard` 里的 `<img>` 仍然是独立加载的新请求。需要确保预加载的图片被浏览器缓存命中
-3. **视频没铺满全屏**：当前视频在 `ml-[88px]` 的容器内，左边留出了侧边栏的空白。需要把视频提到最外层作为全屏背景，侧边栏浮在视频上方
-4. **卡片动画时视频停止**：当前 `handleLoopEnded` 里虽然调了 `play()`，但进入 `cards-fly` phase 后可能没继续播放。需要确保 loop 视频在所有非 intro 阶段持续循环播放
+5 个需要修复的问题：
+
+1. **替换视频**：用户上传了两个新视频文件（首次2K.mp4 和 循环.mp4），需要替换 public/videos/ 下的 intro.mp4 和 loop.mp4
+2. **卡片翻转动效不丝滑 + 背面空白**：当前 cardFlip 动画虽然写了 rotateY，但 `backface-visibility` 在 3D transform 嵌套中可能被破坏。背面的 CardBack 组件虽然引用了 card-back.jpg，但需要确认图片存在且用的是用户新上传的图。同时翻转过程需要"边放大边翻转"，当前 scale 只在外层 cardFlight 中，翻转在内层 cardFlip 中，两者是独立的 — 需要合并让放大和翻转同步
+3. **图片预加载卡顿**：`preloadTemplateImages` 用了 `new Image() + decode()`，但 TemplateCard 里的 `<img>` 用的是 `decoding="async"`，浏览器可能重新解码。需要改为 `decoding="sync"` 或在预加载完成后再渲染卡片
+4. **视频在卡片动画期间停止播放**：loop 视频没有 `loop` 属性，依赖 `onEnded` 手动 `play()`。但 `handleLoopEnded` 在触发 `cards-fly` 后仍然调用了 `play()`，可能是 `onEnded` 不可靠。直接加 `loop` 属性，用 `onEnded` 只做一次性触发
+5. **蒙层上边缘渐变模糊丢失**：Layer 2 的 `backdrop-filter: blur(8px)` 配合 `mask-image` 在 3D transform 容器内可能被浏览器忽略。需要确保蒙层不在 `preserve-3d` 的子树中
 
 ## 改动方案
 
-### 1. 视频铺满全屏 — `src/pages/Index.tsx`
-- 把视频背景层从 `ml-[88px]` 的子容器中提出来，放到最外层 `div` 的直接子元素，`position: fixed, inset: 0`
-- 侧边栏 `z-50` 已经浮在最上层，不需要改
-- 内容区域保留 `ml-[88px]`，但视频不再受这个 margin 影响
+### 1. 替换视频文件
+- 复制 `user-uploads://首次2K.mp4` → `public/videos/intro.mp4`
+- 复制 `user-uploads://循环.mp4` → `public/videos/loop.mp4`
 
-### 2. 动效加长 — `src/index.css` + `src/pages/Index.tsx`
-- `cardFlight` 时长从 1.6s 改为 2.4s
-- `cardFlip` 时长同步改为 2.4s
-- 调整 `cardFlip` 的中间关键帧，让翻转在 40%-65% 之间完成主要旋转，前半段停留在背面更久
-- 每张卡片的错峰延迟从 60ms 改为 80ms
+### 2. 替换卡片背面图片
+- 复制 `user-uploads://output_4e65a54f-dc34-46ba-a752-6ccd87eb0b0b-2.jpg` → `src/assets/card-back.jpg`（覆盖现有文件）
 
-### 3. 图片预加载真正生效 — `src/pages/Index.tsx`
-- 在 `preloadTemplateImages` 里把已解码的图片 URL 缓存到一个 module-level Set 中
-- 确保在 `imagesReady` 为 true 之前不会触发 `cards-fly` phase（当前逻辑已有，需要确认没有竞态）
+### 3. 修复翻转动效 — `src/index.css`
+- 把 `cardFlight` 和 `cardFlip` 合并成一个动画，或者让 cardFlight 同时包含 scale 和位移，cardFlip 只做 rotateY
+- 关键：cardFlight 的 scale 从 0.06 → 1 的过程和 cardFlip 的 rotateY 180 → 0 需要同步进行，实现"边放大边翻转"
+- 调整缓动曲线为更丝滑的 `cubic-bezier(0.25, 0.1, 0.25, 1)`
 
-### 4. 视频持续播放 — `src/pages/Index.tsx`
-- 给 loop 视频加 `loop` 属性，不再依赖 `onEnded` 手动 `play()`
-- 去掉 `handleLoopEnded` 里的 `play()` 调用，改为：`onEnded` 只负责计数和触发 cards-fly
-- 或者更简单：直接加 `loop` 属性，`onEnded` 改为 `onTimeUpdate` 检测播放次数
+### 4. 修复图片预加载 — `src/pages/Index.tsx` + `src/components/TemplateCard.tsx`
+- TemplateCard 的 `<img>` 改为 `decoding="sync"` 确保命中预加载缓存
+- 确保飞行层中的 TemplateCard 只在 `imagesReady` 后才渲染
 
-实际上最简单的方案：loop 视频直接加 HTML `loop` 属性让它无限循环，然后用一个单独的 `timeupdate` 或首次 `ended` 事件来触发卡片飞入。这样视频永远不会停。
+### 5. 视频持续播放 — `src/pages/Index.tsx`
+- 给 loop 视频加 `loop` 属性
+- `handleLoopEnded` 改为只在第一次触发时设置 `cards-fly`，不再手动 `play()`
+- 注意：加了 `loop` 后 `onEnded` 不会再触发，所以改用 `onTimeUpdate` 检测第一次播放完成（`currentTime` 接近 `duration`）
+
+### 6. 蒙层模糊修复 — `src/components/TemplateCard.tsx`
+- 问题根因：卡片在飞行层中处于 `preserve-3d` + `backface-visibility: hidden` 的子树中，`backdrop-filter` 在这种 3D 上下文中会被浏览器忽略
+- 解决：在 TemplateCard 最外层加 `transform: translateZ(0)` 创建独立的 stacking context（已有），但需要确保 `isolate` class 生效
+- 同时检查 Layer 2 的 mask-image 写法是否正确
 
 ### 涉及文件
 
 | 文件 | 改动 |
 |---|---|
-| `src/pages/Index.tsx` | 视频层提到最外层全屏；loop 视频加 `loop` 属性；调整动画时长参数 |
-| `src/index.css` | `cardFlight` 和 `cardFlip` 时长改为 2.4s，调整翻转关键帧节奏 |
+| `public/videos/intro.mp4` | 替换为用户上传的首次2K.mp4 |
+| `public/videos/loop.mp4` | 替换为用户上传的循环.mp4 |
+| `src/assets/card-back.jpg` | 替换为用户上传的扑克牌背面图 |
+| `src/pages/Index.tsx` | loop 视频改用 `loop` + `onTimeUpdate`；图片预加载逻辑优化 |
+| `src/index.css` | cardFlight/cardFlip 关键帧调整，实现边放大边翻转 |
+| `src/components/TemplateCard.tsx` | `decoding="sync"`；确保蒙层在 3D 上下文中稳定 |
 
