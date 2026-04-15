@@ -1,51 +1,66 @@
 
+目标：这次不再继续微调现有实现，而是按你现在指出的 3 个问题做一次结构性修正：视频切换时机、卡片背面与正面加载、蒙层模糊层解耦。
 
-## 问题总结
+1. 视频2替换并改成交错出现逻辑 — `src/pages/Index.tsx` + 资源文件
+- 现状我已核对：现在逻辑是等视频2快播完第一圈时才触发 `cards-fly`，不符合你要的“视频1播完后，视频2刚开始播放时卡片就逐渐出现”。
+- 改法：
+  - 用你新上传的 `最终版.mp4` 替换 `public/videos/loop.mp4`
+  - 把触发时机从当前 `onTimeUpdate + duration - 0.15` 改成视频2开始播放时立即进入卡片出现流程
+  - 卡片不再等“视频2快播完”才出现，而是在视频2开始后就执行淡入/飞入
+- 结果：视频1播完后立刻切到新视频2，卡片随着视频2开头就开始出现
 
-5 个需要修复的问题：
+2. 卡片背面空白：重做双面卡结构，不再在页面里手写正反面 — `src/pages/Index.tsx` + `src/components/FlippableCard.tsx` + `src/components/CardBack.tsx`
+- 现状我已核对：
+  - `Index.tsx` 里现在直接写了一套 front/back 绝对定位结构
+  - `FlippableCard.tsx` 虽然存在，但根本没被用上
+  - 背面空白的高概率根因不是图片没引，而是当前 3D 层级和翻转职责散在页面里，正反面切换不稳定
+- 改法：
+  - 把飞行层卡片统一改为使用 `FlippableCard`
+  - `FlippableCard` 只负责稳定的 3D 双面结构：外层 perspective，内层 rotator，front/back 统一管理
+  - `CardBack` 使用你附件里的扑克牌图样，保留白边牌框，但把牌背图片改成更稳定的 `img`/明确尺寸铺满方式，避免仅靠背景图导致的空白感
+- 结果：翻转过程中会稳定看到牌背，不再出现“背面空白”
 
-1. **替换视频**：用户上传了两个新视频文件（首次2K.mp4 和 循环.mp4），需要替换 public/videos/ 下的 intro.mp4 和 loop.mp4
-2. **卡片翻转动效不丝滑 + 背面空白**：当前 cardFlip 动画虽然写了 rotateY，但 `backface-visibility` 在 3D transform 嵌套中可能被破坏。背面的 CardBack 组件虽然引用了 card-back.jpg，但需要确认图片存在且用的是用户新上传的图。同时翻转过程需要"边放大边翻转"，当前 scale 只在外层 cardFlight 中，翻转在内层 cardFlip 中，两者是独立的 — 需要合并让放大和翻转同步
-3. **图片预加载卡顿**：`preloadTemplateImages` 用了 `new Image() + decode()`，但 TemplateCard 里的 `<img>` 用的是 `decoding="async"`，浏览器可能重新解码。需要改为 `decoding="sync"` 或在预加载完成后再渲染卡片
-4. **视频在卡片动画期间停止播放**：loop 视频没有 `loop` 属性，依赖 `onEnded` 手动 `play()`。但 `handleLoopEnded` 在触发 `cards-fly` 后仍然调用了 `play()`，可能是 `onEnded` 不可靠。直接加 `loop` 属性，用 `onEnded` 只做一次性触发
-5. **蒙层上边缘渐变模糊丢失**：Layer 2 的 `backdrop-filter: blur(8px)` 配合 `mask-image` 在 3D transform 容器内可能被浏览器忽略。需要确保蒙层不在 `preserve-3d` 的子树中
+3. 正面模板图依旧卡顿：把“预加载”和“实际渲染”彻底打通 — `src/pages/Index.tsx` + `src/components/TemplateCard.tsx`
+- 现状我已核对：
+  - 虽然有 `new Image().decode()`，但 `TemplateCard` 仍直接渲染 `<img src={template.image}>`
+  - 这意味着即使浏览器缓存了资源，也可能在真正挂载卡片时再次发生绘制/解码抖动
+- 改法：
+  - 在 `Index.tsx` 中把图片预加载状态细化为“全部模板图已完成 decode 后才允许渲染飞行层正面”
+  - 在飞行动画期间，不再立即把真实 `TemplateCard` 作为正面内容硬挂上去；而是只在 `imagesReady` 后才渲染真实正面
+  - `TemplateCard` 里继续保持 eager，但要补一层可控 ready 态，避免未 ready 时直接出图
+- 结果：卡片飞入时正面图已完成解码，不再边出现边卡
 
-## 改动方案
+4. 蒙层模糊依旧错误：把 blur 蒙层从 3D 翻转子树里拿出去 — `src/components/TemplateCard.tsx` + `src/components/FlippableCard.tsx`
+- 现状我已核对：你说得对，当前 `TemplateCard` 的模糊层还在卡片内容内部，而这张卡又被放进 `preserve-3d` 的翻转结构里；这种情况下 `backdrop-filter + mask-image` 在浏览器里非常容易失效或表现错误。
+- 改法：
+  - 不再让承担 `backdrop-filter` 的层处于 3D 翻转子树内部
+  - 把卡片拆成：
+    1. 纯图片内容层
+    2. 独立的文字/模糊蒙层
+    3. 外层 hover/点击容器
+  - 对“上边缘渐变模糊层”单独做一层，并确保它所在节点不参与 `rotateY`
+- 结果：蒙层上边缘的渐变模糊会恢复，而且不会再被翻转动画反复破坏
 
-### 1. 替换视频文件
-- 复制 `user-uploads://首次2K.mp4` → `public/videos/intro.mp4`
-- 复制 `user-uploads://循环.mp4` → `public/videos/loop.mp4`
+5. 本次涉及文件
+- `public/videos/loop.mp4`
+  - 替换为你上传的 `最终版.mp4`
+- `src/pages/Index.tsx`
+  - 修改视频切换与卡片触发时机
+  - 不再手写脆弱的 front/back 结构
+  - 让卡片在视频2开始时就逐渐出现
+  - 把正面渲染严格绑定到图片 ready 状态
+- `src/components/FlippableCard.tsx`
+  - 改成真正被页面使用的双面卡组件
+  - 稳定处理 front/back 与 rotator
+- `src/components/CardBack.tsx`
+  - 用你附件中的扑克牌样式重做牌背展示
+- `src/components/TemplateCard.tsx`
+  - 重构图片层与蒙层层级
+  - 修复上边缘渐变模糊
 
-### 2. 替换卡片背面图片
-- 复制 `user-uploads://output_4e65a54f-dc34-46ba-a752-6ccd87eb0b0b-2.jpg` → `src/assets/card-back.jpg`（覆盖现有文件）
-
-### 3. 修复翻转动效 — `src/index.css`
-- 把 `cardFlight` 和 `cardFlip` 合并成一个动画，或者让 cardFlight 同时包含 scale 和位移，cardFlip 只做 rotateY
-- 关键：cardFlight 的 scale 从 0.06 → 1 的过程和 cardFlip 的 rotateY 180 → 0 需要同步进行，实现"边放大边翻转"
-- 调整缓动曲线为更丝滑的 `cubic-bezier(0.25, 0.1, 0.25, 1)`
-
-### 4. 修复图片预加载 — `src/pages/Index.tsx` + `src/components/TemplateCard.tsx`
-- TemplateCard 的 `<img>` 改为 `decoding="sync"` 确保命中预加载缓存
-- 确保飞行层中的 TemplateCard 只在 `imagesReady` 后才渲染
-
-### 5. 视频持续播放 — `src/pages/Index.tsx`
-- 给 loop 视频加 `loop` 属性
-- `handleLoopEnded` 改为只在第一次触发时设置 `cards-fly`，不再手动 `play()`
-- 注意：加了 `loop` 后 `onEnded` 不会再触发，所以改用 `onTimeUpdate` 检测第一次播放完成（`currentTime` 接近 `duration`）
-
-### 6. 蒙层模糊修复 — `src/components/TemplateCard.tsx`
-- 问题根因：卡片在飞行层中处于 `preserve-3d` + `backface-visibility: hidden` 的子树中，`backdrop-filter` 在这种 3D 上下文中会被浏览器忽略
-- 解决：在 TemplateCard 最外层加 `transform: translateZ(0)` 创建独立的 stacking context（已有），但需要确保 `isolate` class 生效
-- 同时检查 Layer 2 的 mask-image 写法是否正确
-
-### 涉及文件
-
-| 文件 | 改动 |
-|---|---|
-| `public/videos/intro.mp4` | 替换为用户上传的首次2K.mp4 |
-| `public/videos/loop.mp4` | 替换为用户上传的循环.mp4 |
-| `src/assets/card-back.jpg` | 替换为用户上传的扑克牌背面图 |
-| `src/pages/Index.tsx` | loop 视频改用 `loop` + `onTimeUpdate`；图片预加载逻辑优化 |
-| `src/index.css` | cardFlight/cardFlip 关键帧调整，实现边放大边翻转 |
-| `src/components/TemplateCard.tsx` | `decoding="sync"`；确保蒙层在 3D 上下文中稳定 |
-
+技术说明
+- 这 3 个问题的根因都不是“参数没调好”，而是当前结构错位：
+  1. 视频触发点写成了“loop 快结束”，不是“loop 刚开始”
+  2. 双面卡结构没复用 `FlippableCard`，导致背面显示不稳定
+  3. blur 蒙层仍在 3D 翻转上下文里，所以浏览器会吞掉或错误渲染 `backdrop-filter`
+- 下一步会按这个结构重做，而不是继续补几个 CSS 数值。
