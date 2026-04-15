@@ -1,44 +1,36 @@
+# 修复卡片飞入方向 + 标题位置固定
 
+## 问题总结
 
-# 4 项修改计划
+1. **卡片飞入方向错误**：当前 `translate3d(0, -50vh, 0)` 是从页面**上方屏幕外**飞入，但实际渲染效果可能因 `justify-center` 容器导致起点计算偏移。你要的是从页面顶部（视频中扑克牌位置 / 输入框位置）飞到画面中心。
+2. **标题在输入框出现后下移**：当前 `marginTop: showPanel ? "64px" : "0"` 导致标题被推下去。标题应该在视频2出现后就固定位置，不再因输入框出现而移动。
+3. **标题和卡片整体偏下**：需要往上移动，更靠近画面中心。
 
-## 1. 替换视频2 — `public/videos/loop.mp4`
-用上传的 `1_3.mp4` 替换当前 `loop.mp4`，如文件过大则用 ffmpeg 压缩到 2Mbps 左右。
+## 改法
 
-## 2. 卡片蒙层修复 — `src/components/TemplateCard.tsx`
-当前问题：默认态文字下方空白过多（给 hover 按钮预留了空间），文字只显示 2 行。
+### `src/pages/Index.tsx`
 
-改法：
-- 文字从 `line-clamp-2` 改为 `line-clamp-3`，显示三行描述
-- 默认态文字紧贴卡片底部，`py-2 px-3`，不预留按钮空间
-- hover 时文字淡出、按钮淡入，使用 `position: absolute` 让按钮覆盖在同一位置，不撑高容器
-- 保留现有的模糊蒙层（`backdrop-filter: blur(12px)` + 渐变 mask），不做修改
-- 蒙层高度从 `80px` 调大到 `90px` 以匹配三行文字
+1. **卡片飞入起点修正**：
+  - 当前卡片在 `flex-1 justify-center` 容器内，`-50vh` 是相对于卡片终点位置的偏移，实际视觉上可能不是从顶部飞入
+  - 改为使用 `position: fixed` 或基于绝对坐标的起点，确保初始位置在页面顶部约 `top: 15%`（输入框/扑克牌区域），然后飞到画面中心，一定要做出来从无到有的丝滑动效，最好加上卡片一边放大一边旋转翻转的效果
+  - 具体做法：给卡片容器不再依赖 flex 居中，而是用固定的 `marginTop` 控制终点位置；初始态的 `translateY` 改为从当前位置向上偏移到页面顶部扑克牌区域（约 `-200px` 到 `-250px`，取决于终点位置）
+2. **标题位置固定**：
+  - 去掉 `marginTop: showPanel ? "64px" : "0"`
+  - 标题区域改为固定位置，不随 `showPanel` 变化而移动
+  - 用 `justify-center` 让标题+卡片整体居中，但加一个负的 `marginTop`（如 `-40px`）让整体偏上
+3. **整体上移**：
+  - HeroSection 的 `paddingTop: "30vh"` 在 intro 阶段保留（大标题居中）
+  - 卡片飞入后（cards-fly / ready），标题+卡片区域整体上移，更靠近画面中心偏上
 
-## 3. 卡片飞入动画优化 — `src/pages/Index.tsx`
-当前问题：卡片从 `-30vh` 位置出现，视觉上不够"从视频上方飞入画面中心"，动效不够丝滑。
+### `src/components/HeroSection.tsx`
 
-改法：
-- 初始位置改为 `translate3d(0, -50vh, 0) scale(0.1)`，从更高处（视频扑克牌区域）出发
-- 去掉 `rotateX(25deg)`，简化为纯 `translate + scale + opacity + blur` 组合
-- 落位动画曲线统一为 `cubic-bezier(0.22, 1, 0.36, 1)`，时长 1s
-- 错峰延迟保持每张 100ms
-- 确保 `requestAnimationFrame` 双帧触发 `landed` 状态，实现从无到有的丝滑过渡
-
-## 4. 页面间距调整 — `src/pages/Index.tsx`
-输入框出现后的布局：
-- CreationPanel 距顶部 `64px`（已有）
-- CreationPanel 与主标题间距：`64px`（当前是 `32px`，需改）
-- 主标题与卡片间距：`64px`（已有）
-
-改法：
-- `marginTop: showPanel ? "32px" : "0"` 改为 `marginTop: showPanel ? "64px" : "0"`
+- `paddingTop` 在非 intro 阶段从 `0px` 改为不变，标题位置由父容器统一控制
+- 标题大小在输入框出现后才缩小（`showPanel` 控制），不在 phase 变化时就缩小
 
 ## 涉及文件
 
-| 文件 | 改动 |
-|------|------|
-| `public/videos/loop.mp4` | 替换为新视频 |
-| `src/components/TemplateCard.tsx` | 文字三行、紧贴底部、不预留按钮空间、蒙层高度微调 |
-| `src/pages/Index.tsx` | 飞入起点更高、动画更丝滑、间距 64px |
 
+| 文件                               | 改动                                           |
+| -------------------------------- | -------------------------------------------- |
+| `src/pages/Index.tsx`            | 卡片飞入起点改为从页面顶部向下飞入；标题位置固定不随 showPanel 移动；整体上移 |
+| `src/components/HeroSection.tsx` | 标题位置逻辑简化，仅 showPanel 时缩小字号                   |
