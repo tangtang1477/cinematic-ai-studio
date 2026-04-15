@@ -148,4 +148,38 @@
   .animate-float-orb-slow {
     animation: float-orb 10s ease-in-out 4s infinite;
   }
+
+  /*
+   * Card fly-in keyframe:
+   * - Starts: small, above viewport (translateY), back-face showing (rotateY 180),
+   *   slight tilt, blurred, transparent
+   * - Ends: full size at fan position, front-face showing, clear
+   * Uses CSS custom properties --card-rotate, --card-tx, --card-ty per card.
+   */
+  @keyframes cardFlyIn {
+    0% {
+      transform:
+        translateY(-55vh)
+        scale(0.08)
+        rotateY(180deg)
+        rotateX(18deg)
+        rotateZ(0deg);
+      opacity: 0;
+      filter: blur(6px);
+    }
+    30% {
+      opacity: 1;
+      filter: blur(2px);
+    }
+    100% {
+      transform:
+        translate3d(var(--card-tx, 0px), var(--card-ty, 0px), 0)
+        scale(1)
+        rotateY(0deg)
+        rotateX(0deg)
+        rotateZ(var(--card-rotate, 0deg));
+      opacity: 1;
+      filter: blur(0px);
+    }
+  }
 }
