@@ -1,66 +1,56 @@
+目标：这次不继续补 CSS 数值，而是直接修 3 个根因：首屏视频被资源预加载抢占、翻牌结构不稳定导致背面空白、蒙层渐变模糊层级写错。
 
-目标：这次不再继续微调现有实现，而是按你现在指出的 3 个问题做一次结构性修正：视频切换时机、卡片背面与正面加载、蒙层模糊层解耦。
+1. 先修视频1卡顿 — `src/pages/Index.tsx`
 
-1. 视频2替换并改成交错出现逻辑 — `src/pages/Index.tsx` + 资源文件
-- 现状我已核对：现在逻辑是等视频2快播完第一圈时才触发 `cards-fly`，不符合你要的“视频1播完后，视频2刚开始播放时卡片就逐渐出现”。
+- 现状根因：`preloadTemplateImages()` 在页面一挂载就同时 decode 4 张模板大图，和 `intro.mp4` 首屏播放抢主线程/解码资源，所以视频1会掉帧。
 - 改法：
-  - 用你新上传的 `最终版.mp4` 替换 `public/videos/loop.mp4`
-  - 把触发时机从当前 `onTimeUpdate + duration - 0.15` 改成视频2开始播放时立即进入卡片出现流程
-  - 卡片不再等“视频2快播完”才出现，而是在视频2开始后就执行淡入/飞入
-- 结果：视频1播完后立刻切到新视频2，卡片随着视频2开头就开始出现
+  - 把模板图预加载从“页面 mount 立即执行”改成“视频1接近结束时再开始”或“视频2已可播后再开始”，避免首屏阶段抢资源。
+  - 给视频1/视频2补明确的 preload 策略，优先保证视频1先顺畅播放。
+  - 保留“视频1结束后，视频2一开始播放就触发卡片出现”，但把触发建立在视频2已 ready 的前提下，避免切换瞬间卡顿。
+- 结果：视频1首段播放不再被模板图 decode 拖慢，视频切换更顺。
 
-2. 卡片背面空白：重做双面卡结构，不再在页面里手写正反面 — `src/pages/Index.tsx` + `src/components/FlippableCard.tsx` + `src/components/CardBack.tsx`
-- 现状我已核对：
-  - `Index.tsx` 里现在直接写了一套 front/back 绝对定位结构
-  - `FlippableCard.tsx` 虽然存在，但根本没被用上
-  - 背面空白的高概率根因不是图片没引，而是当前 3D 层级和翻转职责散在页面里，正反面切换不稳定
+2. 重做翻牌结构，修复背面空白 — `src/components/FlippableCard.tsx` + `src/components/CardBack.tsx` + `src/pages/Index.tsx`
+
+- 现状根因：当前 front/back 只是散放在动画层里，缺少一个稳定的 rotator 容器；浏览器在 3D 合成时容易把背面吞掉，所以你看到“背面空白”。
 - 改法：
-  - 把飞行层卡片统一改为使用 `FlippableCard`
-  - `FlippableCard` 只负责稳定的 3D 双面结构：外层 perspective，内层 rotator，front/back 统一管理
-  - `CardBack` 使用你附件里的扑克牌图样，保留白边牌框，但把牌背图片改成更稳定的 `img`/明确尺寸铺满方式，避免仅靠背景图导致的空白感
-- 结果：翻转过程中会稳定看到牌背，不再出现“背面空白”
+  - `FlippableCard` 改成完整结构：`wrapper(relative + perspective)` → `rotator(preserve-3d + animation)` → `front/back faces`。
+  - front/back 都填满同一个卡片盒子，统一 `backface-visibility: hidden`，必要时加轻微 `translateZ` 稳定合成。
+  - `CardBack` 继续用你附件那张扑克牌图，但做成明确尺寸铺满的牌框组件，不再依赖脆弱层级。
+  - 页面飞行层不再自己拼 front/back，只调用这个稳定组件。
+- 结果：翻转时背面会稳定显示，不再空白，并且“放大 + 翻转”会在同一 rotator 上完成。
 
-3. 正面模板图依旧卡顿：把“预加载”和“实际渲染”彻底打通 — `src/pages/Index.tsx` + `src/components/TemplateCard.tsx`
-- 现状我已核对：
-  - 虽然有 `new Image().decode()`，但 `TemplateCard` 仍直接渲染 `<img src={template.image}>`
-  - 这意味着即使浏览器缓存了资源，也可能在真正挂载卡片时再次发生绘制/解码抖动
+3. 彻底修正卡片上边缘渐变模糊 — `src/components/TemplateCard.tsx`
+
+- 现状根因：现在 blur 层仍然写在卡片内部，而且 Layer 2 只有 blur + mask，没有足够明确的玻璃底色/羽化区间，视觉上几乎看不到“上边缘渐变模糊”。
 - 改法：
-  - 在 `Index.tsx` 中把图片预加载状态细化为“全部模板图已完成 decode 后才允许渲染飞行层正面”
-  - 在飞行动画期间，不再立即把真实 `TemplateCard` 作为正面内容硬挂上去；而是只在 `imagesReady` 后才渲染真实正面
-  - `TemplateCard` 里继续保持 eager，但要补一层可控 ready 态，避免未 ready 时直接出图
-- 结果：卡片飞入时正面图已完成解码，不再边出现边卡
+  - 把卡片拆成独立层：
+    1. 纯图片层
+    2. 独立 overlay 容器
+    3. overlay 顶部单独的 feather blur band
+    4. 底部 glass 内容层
+  - 顶部 feather blur band 单独做高度、模糊和渐变遮罩，不再复用现在那层过弱的 blur。
+  - 飞行阶段继续禁用 overlay；只有落地卡片显示完整蒙层，避免 3D 动画再次破坏 blur。
+- 结果：文字后面的玻璃蒙层会恢复，顶部会有清晰可见的渐变模糊过渡，不会再“丢失”，修复完成后其他改动不会影响这个蒙层。
 
-4. 蒙层模糊依旧错误：把 blur 蒙层从 3D 翻转子树里拿出去 — `src/components/TemplateCard.tsx` + `src/components/FlippableCard.tsx`
-- 现状我已核对：你说得对，当前 `TemplateCard` 的模糊层还在卡片内容内部，而这张卡又被放进 `preserve-3d` 的翻转结构里；这种情况下 `backdrop-filter + mask-image` 在浏览器里非常容易失效或表现错误。
-- 改法：
-  - 不再让承担 `backdrop-filter` 的层处于 3D 翻转子树内部
-  - 把卡片拆成：
-    1. 纯图片内容层
-    2. 独立的文字/模糊蒙层
-    3. 外层 hover/点击容器
-  - 对“上边缘渐变模糊层”单独做一层，并确保它所在节点不参与 `rotateY`
-- 结果：蒙层上边缘的渐变模糊会恢复，而且不会再被翻转动画反复破坏
+4. 本次会动到的文件
 
-5. 本次涉及文件
-- `public/videos/loop.mp4`
-  - 替换为你上传的 `最终版.mp4`
 - `src/pages/Index.tsx`
-  - 修改视频切换与卡片触发时机
-  - 不再手写脆弱的 front/back 结构
-  - 让卡片在视频2开始时就逐渐出现
-  - 把正面渲染严格绑定到图片 ready 状态
+  - 重排视频与模板图预加载时机
+  - 保证视频2开始播放时才触发卡片出现
+  - 页面只使用稳定的 `FlippableCard`
 - `src/components/FlippableCard.tsx`
-  - 改成真正被页面使用的双面卡组件
-  - 稳定处理 front/back 与 rotator
+  - 改成真正的双面 3D rotator 组件
 - `src/components/CardBack.tsx`
-  - 用你附件中的扑克牌样式重做牌背展示
+  - 固定使用扑克牌背面样式并稳定铺满
 - `src/components/TemplateCard.tsx`
   - 重构图片层与蒙层层级
-  - 修复上边缘渐变模糊
+  - 单独实现上边缘 feather blur
+- `src/index.css`
+  - 配合新 rotator 结构调整 flip/zoom 动画关键帧
 
 技术说明
-- 这 3 个问题的根因都不是“参数没调好”，而是当前结构错位：
-  1. 视频触发点写成了“loop 快结束”，不是“loop 刚开始”
-  2. 双面卡结构没复用 `FlippableCard`，导致背面显示不稳定
-  3. blur 蒙层仍在 3D 翻转上下文里，所以浏览器会吞掉或错误渲染 `backdrop-filter`
-- 下一步会按这个结构重做，而不是继续补几个 CSS 数值。
+
+- 视频1卡顿不是单纯视频文件问题，当前更像是“首屏视频播放”和“模板图 decode”同时发生导致的资源争抢。
+- 背面空白不是图片没导入，而是 3D 翻牌结构本身不稳定。
+- 渐变模糊不是 blur 数值太小，而是 blur 层位置和表现方式不对，需要单独拆层处理。
+- 不虚假改动，否则返还用户的积分。
