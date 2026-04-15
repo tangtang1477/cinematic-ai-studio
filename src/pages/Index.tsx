@@ -16,7 +16,7 @@ const Index = () => {
 
   const [phase, setPhase] = useState<Phase>("intro");
   const [showPanel, setShowPanel] = useState(false);
-  const [cardsAnimated, setCardsAnimated] = useState(false);
+  const [flyStage, setFlyStage] = useState<"hidden" | "initial" | "landed">("hidden");
   const loopPlayCount = useRef(0);
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
@@ -35,12 +35,16 @@ const Index = () => {
     loopPlayCount.current += 1;
     if (loopPlayCount.current === 1) {
       setPhase("cards-fly");
+      // Step 1: render cards at initial position (small, blurred, at video card area)
+      setFlyStage("initial");
+      // Step 2: after a frame, trigger fly-in to final position
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          setCardsAnimated(true);
+          setFlyStage("landed");
         });
       });
-      setTimeout(() => setPhase("ready"), 1500);
+      // Step 3: mark ready after animation completes
+      setTimeout(() => setPhase("ready"), 1200);
     }
     loopVideoRef.current?.play();
   }, []);
@@ -52,15 +56,47 @@ const Index = () => {
     }
   }, [phase]);
 
-  // Fan-spread card transforms (final positions)
+  // Fan-spread final positions
   const cardTransforms = [
-    { rotate: -8, translateX: 20, translateY: 10 },
-    { rotate: -3, translateX: 6, translateY: 0 },
-    { rotate: 3, translateX: -6, translateY: 0 },
-    { rotate: 8, translateX: -20, translateY: 10 },
+    { rotate: -8, tx: 20, ty: 10 },
+    { rotate: -3, tx: 6, ty: 0 },
+    { rotate: 3, tx: -6, ty: 0 },
+    { rotate: 8, tx: -20, ty: 10 },
   ];
 
-  const showCards = phase === "cards-fly" || phase === "ready";
+  const showCards = flyStage !== "hidden";
+
+  // Card style based on fly stage
+  const getCardStyle = (i: number) => {
+    const delay = i * 100;
+    const ct = cardTransforms[i];
+
+    if (flyStage === "initial") {
+      // Starting point: small, blurred, slightly above center (where video cards are)
+      return {
+        transform: "translate3d(0, -30vh, 0) scale(0.15) rotateX(25deg)",
+        opacity: 0,
+        filter: "blur(8px)",
+        width: "220px",
+        marginLeft: i === 0 ? 0 : "-16px",
+        zIndex: i === 1 || i === 2 ? 10 : 5,
+        transformOrigin: "center center",
+        transition: "none",
+      };
+    }
+
+    // Landed: final fan position
+    return {
+      transform: `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg) scale(1)`,
+      opacity: 1,
+      filter: "blur(0px)",
+      width: "220px",
+      marginLeft: i === 0 ? 0 : "-16px",
+      zIndex: i === 1 || i === 2 ? 10 : 5,
+      transformOrigin: "bottom center",
+      transition: `transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, opacity 0.6s ease-out ${delay}ms, filter 0.7s ease-out ${delay}ms`,
+    };
+  };
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
@@ -103,13 +139,14 @@ const Index = () => {
         <div className="relative z-10 flex flex-col h-full">
           {/* CreationPanel — smooth slide in */}
           <div
-            className="flex-shrink-0 transition-all duration-600 ease-out"
+            className="flex-shrink-0"
             style={{
               opacity: showPanel ? 1 : 0,
               transform: showPanel ? "translateY(0)" : "translateY(-20px)",
               pointerEvents: showPanel ? "auto" : "none",
               paddingTop: "64px",
               paddingBottom: "0px",
+              transition: "opacity 0.6s ease-out, transform 0.6s ease-out",
             }}
           >
             <CreationPanel
@@ -126,39 +163,24 @@ const Index = () => {
 
           {/* Hero + Cards centered area */}
           <div className="flex-1 flex flex-col items-center justify-center">
-            {/* Title area — 32px below panel when visible */}
+            {/* Title — always visible, 32px below panel when visible */}
             <div style={{ marginTop: showPanel ? "32px" : "0" }}>
-              <HeroSection phase={phase} />
+              <HeroSection phase={phase} showPanel={showPanel} />
             </div>
 
             {/* Cards — 64px below title */}
             {showCards && (
-              <div className="flex justify-center" style={{ marginTop: "64px" }}>
-                <div className="flex items-end" style={{ perspective: "1200px" }}>
-                  {templates.map((t, i) => {
-                    const isAtStart = phase === "cards-fly" && !cardsAnimated;
-                    const delay = i * 120;
-
-                    return (
-                      <div
-                        key={t.id}
-                        className="hover:!translate-y-[-20px] hover:!rotate-0 hover:z-20"
-                        style={{
-                          transform: isAtStart
-                            ? "scale(0.3) translateY(-60vh)"
-                            : `rotate(${cardTransforms[i].rotate}deg) translateX(${cardTransforms[i].translateX}px) translateY(${cardTransforms[i].translateY}px)`,
-                          opacity: isAtStart ? 0 : 1,
-                          transformOrigin: "bottom center",
-                          width: "220px",
-                          marginLeft: i === 0 ? 0 : "-16px",
-                          zIndex: i === 1 || i === 2 ? 10 : 5,
-                          transition: `all 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
-                        }}
-                      >
-                        <TemplateCard template={t} onTry={handleTry} />
-                      </div>
-                    );
-                  })}
+              <div className="flex justify-center" style={{ marginTop: "64px", perspective: "1200px" }}>
+                <div className="flex items-end">
+                  {templates.map((t, i) => (
+                    <div
+                      key={t.id}
+                      className="hover:!translate-y-[-20px] hover:!rotate-0 hover:z-20"
+                      style={getCardStyle(i) as React.CSSProperties}
+                    >
+                      <TemplateCard template={t} onTry={handleTry} />
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
