@@ -37,10 +37,14 @@ const Index = () => {
     loopPlayCount.current += 1;
     if (loopPlayCount.current === 1) {
       setPhase("cards-fly");
-      // After animation completes, set ready
+      // Trigger animation after mount
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setCardsAnimated(true);
+        });
+      });
       setTimeout(() => setPhase("ready"), 1500);
     }
-    // Always replay loop
     loopVideoRef.current?.play();
   }, []);
 
