@@ -21,30 +21,50 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         src={template.image}
         alt={template.title}
         className="absolute inset-0 w-full h-full object-cover"
-        fetchPriority="high"
+        loading="eager"
+        decoding="async"
       />
 
-      {/* Upper gradient blur transition — DO NOT REMOVE */}
+      {/* === THREE-LAYER OVERLAY — DO NOT REMOVE ANY LAYER === */}
+
+      {/* Layer 1: Upper gradient darkening — DO NOT REMOVE */}
       <div
         className="absolute bottom-0 left-0 right-0 pointer-events-none"
         style={{
           zIndex: 1,
           height: "110px",
-          background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.6) 100%)",
+          background:
+            "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.6) 100%)",
         }}
       />
-      {/* Bottom blur layer — DO NOT REMOVE */}
+
+      {/* Layer 2: Upper edge blur transition — DO NOT REMOVE */}
       <div
         className="absolute bottom-0 left-0 right-0 pointer-events-none"
         style={{
           zIndex: 2,
-          height: "70px",
+          height: "80px",
           backdropFilter: "blur(8px)",
           WebkitBackdropFilter: "blur(8px)",
-          maskImage: "linear-gradient(to bottom, transparent 0%, black 50%)",
-          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 50%)",
+          maskImage:
+            "linear-gradient(to bottom, transparent 0%, black 50%)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent 0%, black 50%)",
         }}
       />
+
+      {/* Layer 3: Bottom strong blur — DO NOT REMOVE */}
+      <div
+        className="absolute bottom-0 left-0 right-0 pointer-events-none"
+        style={{
+          zIndex: 3,
+          height: "40px",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+        }}
+      />
+
+      {/* === END OVERLAY LAYERS === */}
 
       <div className="absolute bottom-0 left-0 right-0 z-10 px-3 py-2">
         <div
@@ -68,7 +88,10 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
           }}
         >
           <button
-            onClick={(e) => { e.stopPropagation(); onTry(template.prompt); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onTry(template.prompt);
+            }}
             className="glass-btn flex items-center justify-center gap-1.5 px-4 py-2 text-foreground text-[12px] font-medium transition-all duration-200"
             style={{ borderRadius: "16px" }}
           >

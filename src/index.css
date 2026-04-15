@@ -150,22 +150,20 @@
   }
 
   /*
-   * Individual card fly-in:
-   * Each card flies from its own start position to its fan endpoint.
-   * Start: small, back-facing (rotateY 180), tilted, blurred, transparent
-   * End: full size at fan offset, front-facing, clear
+   * =============================================
+   * Card Flight Animation (outer wrapper)
+   * Handles: position, scale, blur, opacity, rotation
    * Uses CSS custom properties per card:
    *   --fly-dx, --fly-dy: translation to final position
-   *   --card-rotate, --card-tx, --card-ty: fan offsets
+   *   --card-rotate: final fan Z rotation
    *   --start-rz: initial Z rotation
+   * =============================================
    */
-  @keyframes cardFlyIndividual {
+  @keyframes cardFlight {
     0% {
       transform:
         translate3d(0, 0, 0)
         scale(0.08)
-        rotateY(180deg)
-        rotateX(12deg)
         rotateZ(var(--start-rz, 0deg));
       opacity: 0;
       filter: blur(10px);
@@ -175,21 +173,34 @@
       filter: blur(6px);
     }
     50% {
-      filter: blur(2px);
+      filter: blur(1px);
     }
     100% {
       transform:
-        translate3d(
-          calc(var(--fly-dx, 0px) + var(--card-tx, 0px)),
-          calc(var(--fly-dy, 0px) + var(--card-ty, 0px)),
-          0
-        )
+        translate3d(var(--fly-dx, 0px), var(--fly-dy, 0px), 0)
         scale(1)
-        rotateY(0deg)
-        rotateX(0deg)
         rotateZ(var(--card-rotate, 0deg));
       opacity: 1;
       filter: blur(0px);
+    }
+  }
+
+  /*
+   * =============================================
+   * Card Flip Animation (inner 3D rotator)
+   * Handles: rotateY from back (180°) to front (0°)
+   * Separate from flight so backface-visibility works
+   * =============================================
+   */
+  @keyframes cardFlip {
+    0% {
+      transform: rotateY(180deg);
+    }
+    55% {
+      transform: rotateY(25deg);
+    }
+    100% {
+      transform: rotateY(0deg);
     }
   }
 }
