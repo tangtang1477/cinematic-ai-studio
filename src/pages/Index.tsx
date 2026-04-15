@@ -170,10 +170,10 @@ const Index = () => {
                       className="hover:!translate-y-[-20px] hover:!rotate-0 hover:z-20"
                       style={{
                         transform:
-                          isFlying
+                          isAtStart
                             ? "scale(0.3) translateY(-40vh)"
                             : `rotate(${cardTransforms[i].rotate}deg) translateX(${cardTransforms[i].translateX}px) translateY(${cardTransforms[i].translateY}px)`,
-                        opacity: isFlying ? 0 : 1,
+                        opacity: isAtStart ? 0 : 1,
                         transformOrigin: "bottom center",
                         width: "220px",
                         marginLeft: i === 0 ? 0 : "-16px",
