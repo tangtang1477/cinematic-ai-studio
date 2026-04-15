@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, type CSSProperties } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import AppSidebar from "@/components/AppSidebar";
 import HeroSection from "@/components/HeroSection";
 import CreationPanel from "@/components/CreationPanel";
@@ -49,11 +49,10 @@ const Index = () => {
     if (loopPlayCount.current === 1) {
       setPhase("cards-fly");
       setCardsVisible(true);
-      // After animation completes, switch to interactive cards
       setTimeout(() => {
         setCardsSettled(true);
         setPhase("ready");
-      }, 1600);
+      }, 1800);
     }
     loopVideoRef.current?.play();
   }, []);
@@ -145,10 +144,9 @@ const Index = () => {
             >
               <HeroSection phase={phase} />
 
-              {/* Cards area */}
+              {/* Settled cards — only after flight completes */}
               <div style={{ marginTop: `${TITLE_TO_CARDS_GAP}px`, pointerEvents: "auto" }}>
                 {cardsSettled ? (
-                  /* Static interactive cards after animation */
                   <div className="flex items-end justify-center">
                     {templates.map((t, i) => {
                       const ct = CARD_FINAL_TRANSFORMS[i];
@@ -170,46 +168,66 @@ const Index = () => {
                       );
                     })}
                   </div>
-                ) : cardsVisible ? (
-                  /* Animated flying cards — CSS keyframe driven */
-                  <div
-                    className="flex items-end justify-center"
-                    style={{
-                      perspective: "1800px",
-                      transformStyle: "preserve-3d",
-                    }}
-                  >
-                    {templates.map((t, i) => {
-                      const ct = CARD_FINAL_TRANSFORMS[i];
-                      const delay = i * 70;
-                      return (
-                        <div
-                          key={`fly-${t.id}`}
-                          style={{
-                            width: `${CARD_WIDTH}px`,
-                            marginLeft: i === 0 ? 0 : `${CARD_OVERLAP}px`,
-                            zIndex: i === 1 || i === 2 ? 10 : 5,
-                            animation: `cardFlyIn 1.3s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both`,
-                            transformStyle: "preserve-3d",
-                            // CSS custom properties for per-card final transform
-                            ["--card-rotate" as string]: `${ct.rotate}deg`,
-                            ["--card-tx" as string]: `${ct.tx}px`,
-                            ["--card-ty" as string]: `${ct.ty}px`,
-                          }}
-                        >
-                          <FlippableCard
-                            front={<TemplateCard template={t} onTry={handleTry} />}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
                 ) : null}
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* ========== FLYING CARDS LAYER ========== */}
+      {/* Fixed-position overlay OUTSIDE overflow-hidden container so cards can fly from top */}
+      {cardsVisible && !cardsSettled && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            pointerEvents: "none",
+            perspective: "1800px",
+          }}
+        >
+          {/* Container that flies from top to center */}
+          <div
+            className="fly-container"
+            style={{
+              position: "absolute",
+              left: "calc(88px + 50%)",
+              transform: "translateX(-50%)",
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "center",
+              animation: "flyContainerIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) both",
+              willChange: "top, opacity",
+            }}
+          >
+            {templates.map((t, i) => {
+              const ct = CARD_FINAL_TRANSFORMS[i];
+              const delay = i * 80;
+              return (
+                <div
+                  key={`fly-${t.id}`}
+                  style={{
+                    width: `${CARD_WIDTH}px`,
+                    marginLeft: i === 0 ? 0 : `${CARD_OVERLAP}px`,
+                    zIndex: i === 1 || i === 2 ? 10 : 5,
+                    animation: `cardFlyIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both`,
+                    transformStyle: "preserve-3d",
+                    willChange: "transform, opacity, filter",
+                    ["--card-rotate" as string]: `${ct.rotate}deg`,
+                    ["--card-tx" as string]: `${ct.tx}px`,
+                    ["--card-ty" as string]: `${ct.ty}px`,
+                  }}
+                >
+                  <FlippableCard
+                    front={<TemplateCard template={t} onTry={handleTry} />}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
