@@ -26,11 +26,11 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         loading="lazy"
       />
 
-      {/* Gradient blur transition zone — always present, upper edge softener */}
+      {/* Gradient blur transition zone — upper edge softener */}
       <div
         className="absolute left-0 right-0 bottom-0 pointer-events-none"
         style={{
-          height: "80px",
+          height: "90px",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
           background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.5) 100%)",
@@ -39,30 +39,28 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         }}
       />
 
-      {/* Content layer — sits on top of the glass, switches between text and button */}
+      {/* Content layer — relative container, text and button share same space */}
       <div className="absolute bottom-0 left-0 right-0 px-3 py-2">
-        {/* Description text */}
+        {/* Description text — 3 lines, tight to bottom */}
         <div
           className="transition-all duration-200 ease-out"
           style={{
             opacity: hovered ? 0 : 1,
             transform: hovered ? "translateY(4px)" : "translateY(0)",
-            position: hovered ? "absolute" : "relative",
-            left: 0, right: 0, bottom: 8,
-            paddingLeft: 12, paddingRight: 12,
           }}
         >
-          <p className="text-[12px] text-foreground/60 leading-[18px] line-clamp-2">
+          <p className="text-[12px] text-foreground/60 leading-[18px] line-clamp-3">
             {template.description}
           </p>
         </div>
 
-        {/* Try this button */}
+        {/* Try this button — absolute overlay, no extra space reserved */}
         <div
-          className="transition-all duration-200 ease-out items-center justify-center flex flex-row gap-[16px]"
+          className="absolute inset-0 flex items-center justify-center transition-all duration-200 ease-out"
           style={{
             opacity: hovered ? 1 : 0,
             transform: hovered ? "translateY(0)" : "translateY(6px)",
+            pointerEvents: hovered ? "auto" : "none",
           }}
         >
           <button
