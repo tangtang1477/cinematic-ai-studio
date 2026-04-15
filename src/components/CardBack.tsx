@@ -8,7 +8,7 @@ const CardBack = () => (
       height: "100%",
       borderRadius: "12px",
       overflow: "hidden",
-      background: "#fff",
+      background: "hsl(var(--card))",
       padding: "6px",
       boxSizing: "border-box",
       backfaceVisibility: "hidden",
@@ -49,12 +49,6 @@ const CardBack = () => (
         }}
       />
     </div>
-  </div>
-);
-
-export default CardBack;
-      }}
-    />
   </div>
 );
 
