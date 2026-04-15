@@ -28,7 +28,8 @@ const CARD_FLY_ORIGINS = [
 ];
 
 /**
- * Preload and fully decode all template images into browser cache.
+ * Preload and fully decode all template images.
+ * Called LATE (when intro video is nearly done) to avoid competing with video decode.
  */
 const preloadedUrls = new Set<string>();
 
@@ -40,12 +41,8 @@ function preloadTemplateImages(): Promise<void> {
       img.src = t.image;
       return img
         .decode()
-        .then(() => {
-          preloadedUrls.add(t.image);
-        })
-        .catch(() => {
-          preloadedUrls.add(t.image);
-        });
+        .then(() => { preloadedUrls.add(t.image); })
+        .catch(() => { preloadedUrls.add(t.image); });
     })
   ).then(() => {});
 }
@@ -64,25 +61,35 @@ const Index = () => {
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
   const flyEndCount = useRef(0);
+  const preloadStarted = useRef(false);
 
   const handleTry = useCallback((templatePrompt: string) => {
     setPrompt(templatePrompt);
     setShowPanel(true);
   }, []);
 
-  // Preload images on mount
-  useEffect(() => {
-    preloadTemplateImages().then(() => setImagesReady(true));
+  // Defer image preload until intro video is near its end (last 2s)
+  const handleIntroTimeUpdate = useCallback(() => {
+    const v = introVideoRef.current;
+    if (!v || preloadStarted.current) return;
+    if (v.duration && v.currentTime >= v.duration - 2) {
+      preloadStarted.current = true;
+      preloadTemplateImages().then(() => setImagesReady(true));
+    }
   }, []);
 
-  // When intro ends → start loop video, enter "loop" phase
+  // When intro ends → start loop video
   const handleIntroEnded = useCallback(() => {
+    // If preload hasn't started yet (very short video), start now
+    if (!preloadStarted.current) {
+      preloadStarted.current = true;
+      preloadTemplateImages().then(() => setImagesReady(true));
+    }
     setPhase("loop");
   }, []);
 
-  // When loop video starts playing → immediately trigger card fly-in
+  // When loop video starts playing → trigger card fly-in
   const handleLoopPlaying = useCallback(() => {
-    // Only trigger once
     if (phase !== "loop") return;
     setPhase("cards-fly");
     setCardsVisible(true);
@@ -123,7 +130,7 @@ const Index = () => {
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
-      {/* Video background — FULL SCREEN, behind everything */}
+      {/* Video background — FULL SCREEN */}
       <div className="fixed inset-0 z-0">
         <video
           ref={introVideoRef}
@@ -133,6 +140,8 @@ const Index = () => {
           autoPlay
           muted
           playsInline
+          preload="auto"
+          onTimeUpdate={handleIntroTimeUpdate}
           onEnded={handleIntroEnded}
         />
         <video
@@ -143,6 +152,7 @@ const Index = () => {
           muted
           playsInline
           loop
+          preload="none"
           onPlaying={handleLoopPlaying}
         />
       </div>
@@ -162,7 +172,7 @@ const Index = () => {
 
         {/* Content layer */}
         <div className="relative z-10 flex h-full flex-col">
-          {/* Input panel — fixed at top, overlays content */}
+          {/* Input panel */}
           <div
             className="absolute inset-x-0 top-0 z-30"
             style={{
@@ -170,8 +180,7 @@ const Index = () => {
               transform: showPanel ? "translateY(0)" : "translateY(-20px)",
               pointerEvents: showPanel ? "auto" : "none",
               paddingTop: "64px",
-              transition:
-                "opacity 0.45s ease-out, transform 0.45s ease-out",
+              transition: "opacity 0.45s ease-out, transform 0.45s ease-out",
             }}
           >
             <CreationPanel
@@ -186,7 +195,7 @@ const Index = () => {
             />
           </div>
 
-          {/* Stage — FIXED position at 31% */}
+          {/* Stage */}
           {isIntro ? (
             <div className="flex-1 flex flex-col items-center justify-center">
               <HeroSection phase={phase} />
@@ -198,7 +207,7 @@ const Index = () => {
             >
               <HeroSection phase={phase} />
 
-              {/* Landed cards */}
+              {/* Landed cards — overlay layer sits OUTSIDE preserve-3d */}
               <div
                 style={{
                   marginTop: `${TITLE_TO_CARDS_GAP}px`,
@@ -272,7 +281,6 @@ const Index = () => {
                   top: `${startY}px`,
                   zIndex: i === 1 || i === 2 ? 10 : 5,
                   willChange: "transform, opacity, filter",
-                  perspective: "1200px",
                   animation: `cardFlight 2.4s cubic-bezier(0.25, 0.1, 0.25, 1) ${delay}ms both`,
                   ["--fly-dx" as string]: `${endX - startX}px`,
                   ["--fly-dy" as string]: `${endY - startY}px`,
@@ -280,25 +288,12 @@ const Index = () => {
                   ["--start-rz" as string]: `${origin.startRotateZ}deg`,
                 }}
               >
-                {/* Inner: FlippableCard handles 3D front/back */}
-                <div
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    transformStyle: "preserve-3d",
-                    animation: `cardFlip 2.4s cubic-bezier(0.25, 0.1, 0.25, 1) ${delay}ms both`,
-                  }}
-                >
-                  <FlippableCard
-                    front={
-                      <TemplateCard
-                        template={t}
-                        onTry={handleTry}
-                        noOverlay
-                      />
-                    }
-                  />
-                </div>
+                <FlippableCard
+                  front={
+                    <TemplateCard template={t} onTry={handleTry} noOverlay />
+                  }
+                  animationDelay={delay}
+                />
               </div>
             );
           })}

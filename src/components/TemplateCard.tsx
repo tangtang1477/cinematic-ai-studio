@@ -11,8 +11,16 @@ interface TemplateCardProps {
 
 /**
  * Template card — image + text overlay with glass blur.
- * The blur overlay layers are rendered OUTSIDE preserve-3d contexts
- * by using `transform: translateZ(0)` to isolate compositing.
+ * 
+ * Overlay structure (when noOverlay=false):
+ *   Layer 1: Feather blur band — top-edge gradient blur transition
+ *   Layer 2: Dark gradient — bottom darkening
+ *   Layer 3: Strong bottom blur — glass effect under text
+ *   Layer 4: Text content
+ * 
+ * The overlay container uses `isolation: isolate` and `transform: translateZ(0)`
+ * to create an independent compositing context. This ensures backdrop-filter
+ * works even if the card was previously in a 3D context.
  */
 const TemplateCard = ({ template, onTry, noOverlay = false }: TemplateCardProps) => {
   const [hovered, setHovered] = useState(false);
@@ -20,16 +28,11 @@ const TemplateCard = ({ template, onTry, noOverlay = false }: TemplateCardProps)
   return (
     <div
       className="group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:ring-2 hover:ring-primary/40"
-      style={{
-        aspectRatio: "3/4",
-        /* Force a new compositing layer — isolates backdrop-filter from parent 3D */
-        isolation: "isolate",
-        transform: "translateZ(0)",
-        willChange: "transform",
-      }}
+      style={{ aspectRatio: "3/4" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* Pure image layer — no filters, no transforms */}
       <img
         src={template.image}
         alt={template.title}
@@ -38,49 +41,53 @@ const TemplateCard = ({ template, onTry, noOverlay = false }: TemplateCardProps)
         decoding="sync"
       />
 
+      {/* Overlay container — completely independent compositing context */}
       {!noOverlay && (
-        <>
-          {/* === THREE-LAYER OVERLAY — DO NOT REMOVE ANY LAYER === */}
-
-          {/* Layer 1: Upper gradient darkening — DO NOT REMOVE */}
+        <div
+          className="absolute inset-0"
+          style={{
+            isolation: "isolate",
+            transform: "translateZ(0)",
+          }}
+        >
+          {/* Layer 1: Feather blur band — visible gradient blur at top edge of overlay */}
           <div
             className="absolute bottom-0 left-0 right-0 pointer-events-none"
             style={{
               zIndex: 1,
-              height: "110px",
-              background:
-                "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.6) 100%)",
+              height: "100px",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              maskImage:
+                "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.7) 60%, black 80%)",
+              WebkitMaskImage:
+                "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.7) 60%, black 80%)",
             }}
           />
 
-          {/* Layer 2: Upper edge blur transition — DO NOT REMOVE */}
+          {/* Layer 2: Dark gradient overlay */}
           <div
             className="absolute bottom-0 left-0 right-0 pointer-events-none"
             style={{
               zIndex: 2,
-              height: "80px",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-              maskImage:
-                "linear-gradient(to bottom, transparent 0%, black 50%)",
-              WebkitMaskImage:
-                "linear-gradient(to bottom, transparent 0%, black 50%)",
+              height: "120px",
+              background:
+                "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 20%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.55) 100%)",
             }}
           />
 
-          {/* Layer 3: Bottom strong blur — DO NOT REMOVE */}
+          {/* Layer 3: Strong bottom blur — extra glass under text */}
           <div
             className="absolute bottom-0 left-0 right-0 pointer-events-none"
             style={{
               zIndex: 3,
-              height: "40px",
-              backdropFilter: "blur(14px)",
-              WebkitBackdropFilter: "blur(14px)",
+              height: "44px",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
             }}
           />
 
-          {/* === END OVERLAY LAYERS === */}
-
+          {/* Layer 4: Text content */}
           <div className="absolute bottom-0 left-0 right-0 z-10 px-3 py-2">
             <div
               className="transition-all duration-200 ease-out"
@@ -115,7 +122,7 @@ const TemplateCard = ({ template, onTry, noOverlay = false }: TemplateCardProps)
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
