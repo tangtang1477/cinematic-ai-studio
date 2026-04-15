@@ -26,11 +26,11 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         loading="lazy"
       />
 
-      {/* Gradient blur transition zone — fades blur+tint from transparent into the solid glass panel */}
+      {/* Gradient blur transition zone */}
       <div
         className="absolute left-0 right-0 bottom-0 pointer-events-none"
         style={{
-          height: "120px",
+          height: "60px",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.45) 40%)",
@@ -44,13 +44,13 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         className="absolute bottom-0 left-0 right-0 transition-all duration-200"
       >
         {!hovered ? (
-          <div className="px-3 pt-[12px] pb-[12px]">
-            <p className="text-[12px] text-foreground/60 leading-[18px] line-clamp-3">
+          <div className="px-3 pt-[8px] pb-[8px]">
+            <p className="text-[12px] text-foreground/60 leading-[18px] line-clamp-2">
               {template.description}
             </p>
           </div>
         ) : (
-          <div className="px-3 pt-[12px] pb-[12px] flex justify-center">
+          <div className="px-3 pt-[8px] pb-[8px] flex justify-center">
             <button
               onClick={(e) => { e.stopPropagation(); onTry(template.prompt); }}
               className="glass-btn flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg
