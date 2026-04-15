@@ -150,45 +150,40 @@
   }
 
   /*
-   * Card fly-in keyframe:
-   * - Starts: small, above viewport (translateY), back-face showing (rotateY 180),
-   *   slight tilt, blurred, transparent
-   * - Ends: full size at fan position, front-face showing, clear
-   * Uses CSS custom properties --card-rotate, --card-tx, --card-ty per card.
+   * Individual card fly-in:
+   * Each card flies from its own start position to its fan endpoint.
+   * Start: small, back-facing (rotateY 180), tilted, blurred, transparent
+   * End: full size at fan offset, front-facing, clear
+   * Uses CSS custom properties per card:
+   *   --fly-dx, --fly-dy: translation to final position
+   *   --card-rotate, --card-tx, --card-ty: fan offsets
+   *   --start-rz: initial Z rotation
    */
-  /* Container flies from top area to card landing zone */
-  @keyframes flyContainerIn {
-    0% {
-      top: 8%;
-      opacity: 0;
-    }
-    15% {
-      opacity: 1;
-    }
-    100% {
-      top: 56%;
-      opacity: 1;
-    }
-  }
-
-  /* Each card: starts tiny + back-facing + blurred, ends full-size + front-facing + clear */
-  @keyframes cardFlyIn {
+  @keyframes cardFlyIndividual {
     0% {
       transform:
-        scale(0.06)
+        translate3d(0, 0, 0)
+        scale(0.08)
         rotateY(180deg)
-        rotateX(15deg)
-        rotateZ(0deg);
+        rotateX(12deg)
+        rotateZ(var(--start-rz, 0deg));
       opacity: 0;
-      filter: blur(8px);
+      filter: blur(10px);
     }
-    20% {
+    12% {
       opacity: 1;
-      filter: blur(3px);
+      filter: blur(6px);
+    }
+    50% {
+      filter: blur(2px);
     }
     100% {
       transform:
-        translate3d(var(--card-tx, 0px), var(--card-ty, 0px), 0)
+        translate3d(
+          calc(var(--fly-dx, 0px) + var(--card-tx, 0px)),
+          calc(var(--fly-dy, 0px) + var(--card-ty, 0px)),
+          0
+        )
         scale(1)
         rotateY(0deg)
         rotateX(0deg)
