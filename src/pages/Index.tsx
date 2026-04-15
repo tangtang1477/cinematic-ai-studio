@@ -72,9 +72,8 @@ const Index = () => {
     const ct = cardTransforms[i];
 
     if (flyStage === "initial") {
-      // Starting point: small, blurred, slightly above center (where video cards are)
       return {
-        transform: "translate3d(0, -30vh, 0) scale(0.15) rotateX(25deg)",
+        transform: "translate3d(0, -50vh, 0) scale(0.1)",
         opacity: 0,
         filter: "blur(8px)",
         width: "220px",
