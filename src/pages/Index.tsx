@@ -161,8 +161,8 @@ const Index = () => {
             <div className="flex justify-center items-end py-8 px-6 flex-1">
               <div className="flex items-end" style={{ perspective: "1200px" }}>
                 {templates.map((t, i) => {
-                  const isFlying = phase === "cards-fly";
-                  const delay = i * 120; // stagger delay ms
+                  const isAtStart = phase === "cards-fly" && !cardsAnimated;
+                  const delay = i * 120;
 
                   return (
                     <div
