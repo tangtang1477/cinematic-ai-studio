@@ -1,65 +1,94 @@
-# 3D 模板页面全面改版计划
+# 首次进入沉浸式视频引导交互方案
 
 ## 概述
 
-将当前多分类模板页面改版为以 3D 为主题的沉浸式页面，仅展示 4 张 3D 模板卡片，配色切换为 #71F0F6 青色系，输入框置顶，整体突出 3D 氛围感。
+用户首次进入页面时播放引导视频，营造从视频中扑克牌变为模板卡片的沉浸式过渡体验。整个流程分为4个阶段：视频1播放 → 视频2循环 → 卡片飞出动画 → 正常使用状态。
 
-## 改动详情
-
-### 1. 配色系统 — `src/index.css`
-
-将 primary 从紫蓝色 `hsl(245 58% 65%)` 切换为 #71F0F6 对应的 HSL 值（约 `183 85% 70%`），同步更新 accent、ring、sidebar-primary 等所有关联变量。`glass-btn` 中的紫色 `rgba(124,107,219,...)` 全部替换为青色系 `rgba(113,240,246,...)`。
-
-### 2. 删除分类系统
-
-- **删除** `src/components/CategoryFilter.tsx` 文件
-- `**src/data/templates.ts**`：删除 `categories` 导出，`templates` 数组只保留 4 个 3D 模板（id 11 Dreamcore + 另外 3 个改为 3D 分类或新增）
-- `**src/pages/Index.tsx**`：移除 CategoryFilter 引用和 category 状态
-
-### 3. 页面布局重构 — `src/pages/Index.tsx`
+## 交互流程
 
 ```text
-┌──────────────────────────────────┐
-│  Sidebar │  输入框 (居中, 非满宽)    │  ← 固定顶部
-│   88px   ├──────────────────────────┤
-│          │           标题         │
-│          │  4 张 3D 卡片 (居中，类似扑克牌展开)      │  ← 可滚动区域
-│          │                          │
-└──────────────────────────────────┘
+阶段1: 视频1播放（首次进入视频.mp4）
+  - 全屏背景视频，仅显示标题+副标题（居中）
+  - 无输入框、无卡片、无侧边栏交互
+  - 视频播放结束后自动进入阶段2
+
+阶段2: 视频2播放（2.mp4）
+  - 无缝切换为第二个视频，循环播放
+  - 仍然只显示标题+副标题
+
+阶段3: 卡片飞出动画（视频2首次播完时触发）
+  - 标题淡出
+  - 4张卡片从视频画面中心偏上（模拟扑克牌位置）缩小状态飞出
+  - 动画：先从中心偏上小尺寸出现，然后放大+位移到扇形展开位置
+  - 动画时长约 1-1.5s，带 spring 弹性效果
+  - 视频2在背景继续循环播放
+
+阶段4: 正常使用状态
+  - 卡片就位，可交互（hover 显示 Try this）
+  - 点击 Try this → 顶部 CreationPanel 动画滑入出现
+  - 视频2作为背景持续循环
 ```
 
-- 输入框 (CreationPanel) 移到页面顶部固定区域，设定 `max-width`（约 720px）居中
-- 标题和卡片在下方可滚动区域
-- 4 张卡片使用卡牌扇形展开布局，体现3D感，居中展示
+## 技术实现
 
-### 4. 3D 氛围感设计
+### 1. 复制视频文件到 `public/`
 
-- **背景**：添加微妙的径向渐变光晕（青色系），从页面中心向外扩散，`radial-gradient(ellipse at 50% 60%, rgba(113,240,246,0.06) 0%, transparent 70%)`
-- **标题样式**：标题文字添加青色微光 `text-shadow`，副标题带轻微发光
-- **卡片区域**：卡片带有青色边框高光 `hover:ring-[#71F0F6]/40`，卡片之间添加间距让布局更有呼吸感
-- **装饰元素**：在背景中添加 CSS 实现的浮动光点/光圈动画，增强 3D 科技氛围
-- 整个页面可以设计成一本魔法书，增加美观性和趣味性
+- `首次进入视频.mp4` → `public/videos/intro.mp4`
+- `2.mp4` → `public/videos/loop.mp4`
 
-### 5. 尺寸选择重新设计 — `src/components/CreationPanel.tsx`
+### 2. 新增状态管理 — `src/pages/Index.tsx`
 
-现在有 4 种尺寸：16:9、9:16、3:4、4:3，不再适合用 icon+比例文字的方式。改为**下拉选择器**：
+```typescript
+// 页面阶段
+type Phase = "intro" | "loop" | "cards-fly" | "ready";
 
-- 触发按钮显示当前选中的比例文字（如 "16:9"），前面放一个小的比例示意矩形 SVG
-- 点击后下拉菜单列出 4 个选项，每个选项前面用一个小矩形图示表示比例
-- 类型从 `"landscape" | "portrait"` 改为 `"16:9" | "9:16" | "3:4" | "4:3"`
+const [phase, setPhase] = useState<Phase>("intro");
+const [showPanel, setShowPanel] = useState(false); // 输入框是否显示
+```
 
-### 6. 更新 `src/components/HeroSection.tsx`
+- `intro`: 视频1播放中
+- `loop`: 视频2开始播放
+- `cards-fly`: 视频2首次播完，卡片飞出动画进行中
+- `ready`: 卡片就位，正常交互
 
-标题和副标题更新为 3D 主题相关文案，添加青色发光效果。
+### 3. 视频背景层 — `src/pages/Index.tsx`
+
+- 使用两个 `<video>` 元素，通过 opacity 切换
+- 视频1: `onEnded` → 设置 phase 为 `"loop"`
+- 视频2: 监听 `onEnded` 事件，首次触发时设置 phase 为 `"cards-fly"`，之后继续循环（`video.play()`）
+- 视频铺满整个内容区域，`object-fit: cover`
+
+### 4. 标题显示逻辑 — `HeroSection`
+
+- `phase === "intro" || phase === "loop"` 时居中显示标题+副标题
+- `phase === "cards-fly"` 时标题淡出（CSS transition opacity）
+- `phase === "ready"` 时标题隐藏或缩小到顶部
+
+### 5. 卡片飞出动画 — `src/pages/Index.tsx`
+
+当 `phase === "cards-fly"` 时：
+
+- 4张卡片初始状态：`scale(0.3) translate(中心位置)`，opacity 0
+- 依次延迟（每张间隔 100-150ms）通过 CSS transition 飞到扇形展开的最终位置
+- 动画完成后（约 1.2s）设置 phase 为 `"ready"`
+- 使用 `transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)` 实现弹性飞出效果
+
+### 6. CreationPanel 显示逻辑
+
+- 默认隐藏 (`showPanel = false`)
+- 点击任意卡片的 "Try this" → `setShowPanel(true)` + 填入 prompt
+- CreationPanel 从顶部滑入（`transform: translateY(-100%)` → `translateY(0)`，transition 0.4s）
+
+### 7. 刷新重播
+
+- 不使用 localStorage 持久化状态，每次刷新 phase 重置为 `"intro"`，自然重新播放整个流程
 
 ## 需要修改的文件
 
 
-| 文件                                  | 改动                                      |
-| ----------------------------------- | --------------------------------------- |
-| `src/index.css`                     | primary 配色改为 #71F0F6 青色系，glass-btn 颜色同步 |
-| `src/data/templates.ts`             | 删除 categories，只保留 4 个 3D 模板             |
-| `src/pages/Index.tsx`               | 删除分类，输入框置顶，卡片 2×2 布局，3D 背景氛围            |
-| `src/components/CreationPanel.tsx`  | 尺寸改为 4 选项下拉，非满宽居中                       |
-| `src/components/HeroSection.tsx`    | 3D 主题文案，青色发光效果                          |
-| `src/components/CategoryFilter.tsx` | 删除                                      |
+| 文件                                | 改动                                             |
+| --------------------------------- | ---------------------------------------------- |
+| `public/videos/`                  | 新增两个视频文件                                       |
+| `src/pages/Index.tsx`             | 添加 phase 状态机、视频背景层、卡片飞出动画逻辑、CreationPanel 条件显示 |
+| `src/components/HeroSection.tsx`  | 接收 phase prop，控制显示/淡出                          |
+| `src/components/TemplateCard.tsx` | onTry 回调不变，由父组件控制 showPanel                    |
