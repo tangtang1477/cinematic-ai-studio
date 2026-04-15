@@ -133,6 +133,7 @@ const Index = () => {
           autoPlay
           muted
           playsInline
+          preload="auto"
           onEnded={handleIntroEnded}
         />
         <video

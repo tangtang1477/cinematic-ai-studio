@@ -4,11 +4,6 @@ interface FlippableCardProps {
   front: React.ReactNode;
 }
 
-/**
- * A card with two faces. The PARENT must have transformStyle: "preserve-3d"
- * and apply the rotation animation. This component renders front/back
- * with proper backface-visibility.
- */
 const FlippableCard = ({ front }: FlippableCardProps) => {
   return (
     <>
@@ -19,6 +14,7 @@ const FlippableCard = ({ front }: FlippableCardProps) => {
           inset: 0,
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
+          transformStyle: "flat",
           transform: "rotateY(0deg)",
           borderRadius: "12px",
           overflow: "hidden",
@@ -34,6 +30,7 @@ const FlippableCard = ({ front }: FlippableCardProps) => {
           inset: 0,
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
+          transformStyle: "flat",
           transform: "rotateY(180deg)",
           borderRadius: "12px",
           overflow: "hidden",
