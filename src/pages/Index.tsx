@@ -89,7 +89,6 @@ const Index = () => {
       setCardsVisible(true);
       flyEndCount.current = 0;
     }
-    loopVideoRef.current?.play();
   }, [imagesReady, phase]);
 
   useEffect(() => {
