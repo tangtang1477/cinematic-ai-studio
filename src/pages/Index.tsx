@@ -35,16 +35,13 @@ const Index = () => {
     loopPlayCount.current += 1;
     if (loopPlayCount.current === 1) {
       setPhase("cards-fly");
-      // Step 1: render cards at initial position (small, blurred, at video card area)
       setFlyStage("initial");
-      // Step 2: after a frame, trigger fly-in to final position
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           setFlyStage("landed");
         });
       });
-      // Step 3: mark ready after animation completes
-      setTimeout(() => setPhase("ready"), 1200);
+      setTimeout(() => setPhase("ready"), 1400);
     }
     loopVideoRef.current?.play();
   }, []);
@@ -68,14 +65,16 @@ const Index = () => {
 
   // Card style based on fly stage
   const getCardStyle = (i: number) => {
-    const delay = i * 100;
+    const delay = i * 80;
     const ct = cardTransforms[i];
 
     if (flyStage === "initial") {
+      // Start from TOP of page (poker card area) — translate UP from final position
+      // Cards end up roughly at vertical center, so we move them ~300px up + tiny scale + blur
       return {
-        transform: "translate3d(0, -50vh, 0) scale(0.1)",
+        transform: "translate3d(0, -280px, 0) scale(0.15) rotateY(180deg)",
         opacity: 0,
-        filter: "blur(8px)",
+        filter: "blur(12px)",
         width: "220px",
         marginLeft: i === 0 ? 0 : "-16px",
         zIndex: i === 1 || i === 2 ? 10 : 5,
@@ -84,16 +83,16 @@ const Index = () => {
       };
     }
 
-    // Landed: final fan position
+    // Landed: final fan position with flip resolved
     return {
-      transform: `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg) scale(1)`,
+      transform: `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg) scale(1) rotateY(0deg)`,
       opacity: 1,
       filter: "blur(0px)",
       width: "220px",
       marginLeft: i === 0 ? 0 : "-16px",
       zIndex: i === 1 || i === 2 ? 10 : 5,
       transformOrigin: "bottom center",
-      transition: `transform 1s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, opacity 0.6s ease-out ${delay}ms, filter 0.7s ease-out ${delay}ms`,
+      transition: `transform 1.2s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, opacity 0.7s ease-out ${delay}ms, filter 0.8s ease-out ${delay}ms`,
     };
   };
 
@@ -160,16 +159,19 @@ const Index = () => {
             />
           </div>
 
-          {/* Hero + Cards centered area */}
-          <div className="flex-1 flex flex-col items-center justify-center">
-            {/* Title — always visible, 32px below panel when visible */}
-            <div style={{ marginTop: showPanel ? "64px" : "0" }}>
+          {/* Hero + Cards centered area — fixed position, does NOT move with panel */}
+          <div className="flex-1 flex flex-col items-center justify-center" style={{ marginTop: "-40px" }}>
+            {/* Title — always visible, position does NOT change with showPanel */}
+            <div>
               <HeroSection phase={phase} showPanel={showPanel} />
             </div>
 
             {/* Cards — 64px below title */}
             {showCards && (
-              <div className="flex justify-center" style={{ marginTop: "64px", perspective: "1200px" }}>
+              <div
+                className="transition-all duration-200 ease-out items-center justify-center flex flex-row gap-[16px]"
+                style={{ marginTop: "64px", perspective: "1200px" }}
+              >
                 <div className="flex items-end">
                   {templates.map((t, i) => (
                     <div
