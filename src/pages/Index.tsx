@@ -7,6 +7,19 @@ import { templates } from "@/data/templates";
 import type { AspectRatio } from "@/components/CreationPanel";
 
 type Phase = "intro" | "loop" | "cards-fly" | "ready";
+type FlyStage = "hidden" | "flying" | "landed" | "done";
+
+const CARD_FINAL_TRANSFORMS = [
+  { rotate: -8, tx: 20, ty: 10 },
+  { rotate: -3, tx: 6, ty: 0 },
+  { rotate: 3, tx: -6, ty: 0 },
+  { rotate: 8, tx: -20, ty: 10 },
+];
+
+// The top position (in vh) where the input box / poker cards area is
+const FLY_ORIGIN_TOP_VH = 12;
+// The final resting position (in vh) for the card fan center
+const FLY_DEST_TOP_VH = 52;
 
 const Index = () => {
   const [prompt, setPrompt] = useState("");
@@ -16,7 +29,7 @@ const Index = () => {
 
   const [phase, setPhase] = useState<Phase>("intro");
   const [showPanel, setShowPanel] = useState(false);
-  const [flyStage, setFlyStage] = useState<"hidden" | "flying" | "landed">("hidden");
+  const [flyStage, setFlyStage] = useState<FlyStage>("hidden");
   const loopPlayCount = useRef(0);
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
@@ -35,15 +48,19 @@ const Index = () => {
     loopPlayCount.current += 1;
     if (loopPlayCount.current === 1) {
       setPhase("cards-fly");
-      // Stage 1: render cards at origin (invisible, tiny)
+      // Stage 1: render flying cards at origin (tiny, invisible)
       setFlyStage("flying");
-      // Stage 2: after a frame, trigger the flight transition
+      // Stage 2: trigger flight transition after paint
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           setFlyStage("landed");
         });
       });
-      setTimeout(() => setPhase("ready"), 1400);
+      // Stage 3: after animation completes, switch to static landed layer
+      setTimeout(() => {
+        setFlyStage("done");
+        setPhase("ready");
+      }, 1600);
     }
     loopVideoRef.current?.play();
   }, []);
@@ -55,57 +72,9 @@ const Index = () => {
     }
   }, [phase]);
 
-  // Fan-spread final positions (relative to the card container center)
-  const cardFinalTransforms = [
-    { rotate: -8, tx: 20, ty: 10 },
-    { rotate: -3, tx: 6, ty: 0 },
-    { rotate: 3, tx: -6, ty: 0 },
-    { rotate: 8, tx: -20, ty: 10 },
-  ];
-
-  const showCards = flyStage !== "hidden";
   const isIntro = phase === "intro";
-
-  // The cards fly from the top of the page (where the input box / poker cards are)
-  // to their final fan position. We use absolute positioning for the entire card layer.
-  // Origin: top ~15% of viewport. Destination: center of the stage.
-  // The "flying" state = at origin (tiny, flipped, blurred).
-  // The "landed" state = at destination (full size, no flip, clear).
-
-  const getCardStyle = (i: number): React.CSSProperties => {
-    const delay = i * 80;
-    const ct = cardFinalTransforms[i];
-
-    if (flyStage === "flying") {
-      // Origin state: at top, tiny, flipped, invisible
-      return {
-        transform: `scale(0.08) rotateY(180deg) rotateX(20deg) rotateZ(${(i - 1.5) * 8}deg)`,
-        opacity: 0,
-        filter: "blur(12px)",
-        width: "220px",
-        marginLeft: i === 0 ? 0 : "-16px",
-        zIndex: i === 1 || i === 2 ? 10 : 5,
-        transformOrigin: "center center",
-        backfaceVisibility: "hidden",
-        willChange: "transform, opacity, filter",
-        transition: "none",
-      };
-    }
-
-    // Landed state: final fan position
-    return {
-      transform: `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg) scale(1) rotateY(0deg) rotateX(0deg)`,
-      opacity: 1,
-      filter: "blur(0px)",
-      width: "220px",
-      marginLeft: i === 0 ? 0 : "-16px",
-      zIndex: i === 1 || i === 2 ? 10 : 5,
-      transformOrigin: "bottom center",
-      backfaceVisibility: "hidden",
-      willChange: "transform, opacity, filter",
-      transition: `transform 1.2s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, opacity 0.6s ease-out ${delay}ms, filter 0.7s ease-out ${delay}ms`,
-    };
-  };
+  const showFlyingLayer = flyStage === "flying" || flyStage === "landed";
+  const showLandedLayer = flyStage === "done";
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
@@ -146,7 +115,7 @@ const Index = () => {
 
         {/* Content layer */}
         <div className="relative z-10 flex flex-col h-full">
-          {/* Input panel - absolute positioned at top, never affects layout below */}
+          {/* Input panel - absolute positioned at top */}
           <div
             className="absolute inset-x-0 top-0 z-20"
             style={{
@@ -169,62 +138,118 @@ const Index = () => {
             />
           </div>
 
-          {/* Stage area - absolute positioned, anchored to fixed coordinates */}
+          {/* Stage area */}
           {isIntro ? (
-            /* Intro: title centered with large padding */
             <div className="flex-1 flex flex-col items-center justify-center">
               <HeroSection phase={phase} />
             </div>
           ) : (
-            /* Post-intro: title + cards in a fixed "stage" area */
+            /* Post-intro: title + cards in a fixed stage, positioned below input box */
             <div
               className="absolute inset-x-0 flex flex-col items-center"
               style={{
-                top: "38%",
+                top: "45%",
                 transform: "translateY(-50%)",
-                perspective: "1600px",
               }}
             >
               <HeroSection phase={phase} />
 
-              {/* Card fly-in layer - absolutely positioned relative to stage */}
-              {showCards && (
-                <div
-                  style={{
-                    marginTop: "64px",
-                    position: "relative",
-                    transformStyle: "preserve-3d",
-                  }}
-                >
-                  {/* 
-                    The card container itself moves from top to center.
-                    In "flying" state: translated up to the input box area.
-                    In "landed" state: at its natural position (0,0).
-                  */}
-                  <div
-                    className="flex items-end justify-center"
-                    style={{
-                      transform: flyStage === "flying"
-                        ? "translateY(-45vh)"
-                        : "translateY(0)",
-                      transition: flyStage === "landed"
-                        ? "transform 1.2s cubic-bezier(0.22, 1, 0.36, 1)"
-                        : "none",
-                      transformStyle: "preserve-3d",
-                    }}
-                  >
-                    {templates.map((t, i) => (
-                      <div
-                        key={t.id}
-                        className="hover:!translate-y-[-20px] hover:!rotate-0 hover:z-20"
-                        style={getCardStyle(i)}
-                      >
-                        <TemplateCard template={t} onTry={handleTry} />
-                      </div>
-                    ))}
+              {/* Landed (static) card layer - only after animation completes */}
+              {showLandedLayer && (
+                <div style={{ marginTop: "64px" }}>
+                  <div className="flex items-end justify-center">
+                    {templates.map((t, i) => {
+                      const ct = CARD_FINAL_TRANSFORMS[i];
+                      return (
+                        <div
+                          key={t.id}
+                          className="hover:!translate-y-[-20px] hover:!rotate-0 hover:z-20"
+                          style={{
+                            transform: `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg)`,
+                            width: "220px",
+                            marginLeft: i === 0 ? 0 : "-16px",
+                            zIndex: i === 1 || i === 2 ? 10 : 5,
+                            transformOrigin: "bottom center",
+                            transition: "transform 0.3s ease-out",
+                          }}
+                        >
+                          <TemplateCard template={t} onTry={handleTry} />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ============================================
+              FLYING LAYER — completely separate from stage.
+              Absolute positioned in the full page.
+              Origin: top of page (input box / poker area).
+              Destination: center of page (card fan area).
+              ============================================ */}
+          {showFlyingLayer && (
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                // Animate from origin top to destination top
+                top: flyStage === "flying" ? `${FLY_ORIGIN_TOP_VH}vh` : `${FLY_DEST_TOP_VH}vh`,
+                transform: "translateX(-50%) translateY(-50%)",
+                transition: flyStage === "landed"
+                  ? "top 1.2s cubic-bezier(0.22, 1, 0.36, 1)"
+                  : "none",
+                zIndex: 30,
+                perspective: "1600px",
+                transformStyle: "preserve-3d",
+                pointerEvents: "none",
+              }}
+            >
+              <div
+                className="flex items-end justify-center"
+                style={{ transformStyle: "preserve-3d" }}
+              >
+                {templates.map((t, i) => {
+                  const ct = CARD_FINAL_TRANSFORMS[i];
+                  const delay = i * 60;
+
+                  const style: React.CSSProperties =
+                    flyStage === "flying"
+                      ? {
+                          // Origin: tiny, flipped, blurred, transparent
+                          transform: `scale(0.08) rotateY(180deg) rotateX(15deg) rotateZ(${(i - 1.5) * 5}deg)`,
+                          opacity: 0,
+                          filter: "blur(8px)",
+                          width: "220px",
+                          marginLeft: i === 0 ? 0 : "-16px",
+                          zIndex: i === 1 || i === 2 ? 10 : 5,
+                          transformOrigin: "center center",
+                          backfaceVisibility: "hidden",
+                          willChange: "transform, opacity, filter",
+                          transition: "none",
+                        }
+                      : {
+                          // Destination: full size, fan spread, clear
+                          transform: `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg) scale(1) rotateY(0deg) rotateX(0deg)`,
+                          opacity: 1,
+                          filter: "blur(0px)",
+                          width: "220px",
+                          marginLeft: i === 0 ? 0 : "-16px",
+                          zIndex: i === 1 || i === 2 ? 10 : 5,
+                          transformOrigin: "bottom center",
+                          backfaceVisibility: "hidden",
+                          willChange: "transform, opacity, filter",
+                          transition: `transform 1.2s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, opacity 0.5s ease-out ${delay}ms, filter 0.6s ease-out ${delay}ms`,
+                        };
+
+                  return (
+                    <div key={t.id} style={style}>
+                      <TemplateCard template={t} onTry={handleTry} />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
