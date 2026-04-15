@@ -1,94 +1,48 @@
-# 首次进入沉浸式视频引导交互方案
+# 6项修改计划
 
-## 概述
+## 1. 卡片蒙层修复 — `TemplateCard.tsx`
 
-用户首次进入页面时播放引导视频，营造从视频中扑克牌变为模板卡片的沉浸式过渡体验。整个流程分为4个阶段：视频1播放 → 视频2循环 → 卡片飞出动画 → 正常使用状态。
+当前蒙层 `height: 120px` 太高。修改为：
 
-## 交互流程
+- 渐变模糊过渡层高度缩小到约 60px，仅覆盖文字区域上方一小段
+- 确保非 hover 状态下的文字蒙层和 hover 状态下的 Try this 蒙层样式一致（都是底部小区域 + 上边缘渐变模糊）
 
-```text
-阶段1: 视频1播放（首次进入视频.mp4）
-  - 全屏背景视频，仅显示标题+副标题（居中）
-  - 无输入框、无卡片、无侧边栏交互
-  - 视频播放结束后自动进入阶段2
+## 2. 视频1标题更大 + 阴影 — `HeroSection.tsx`
 
-阶段2: 视频2播放（2.mp4）
-  - 无缝切换为第二个视频，循环播放
-  - 仍然只显示标题+副标题
+- intro 阶段标题字号从 `32px` 增大到 `48px`
+- 添加更强的 `text-shadow`：`0 2px 16px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.4)` 让白色字在视频背景上清晰可见
+- 副标题也加黑色阴影，字号变为20px
 
-阶段3: 卡片飞出动画（视频2首次播完时触发）
-  - 标题淡出
-  - 4张卡片从视频画面中心偏上（模拟扑克牌位置）缩小状态飞出
-  - 动画：先从中心偏上小尺寸出现，然后放大+位移到扇形展开位置
-  - 动画时长约 1-1.5s，带 spring 弹性效果
-  - 视频2在背景继续循环播放
+## 3. 卡片飞入动画 + 位置上移 — `Index.tsx`
 
-阶段4: 正常使用状态
-  - 卡片就位，可交互（hover 显示 Try this）
-  - 点击 Try this → 顶部 CreationPanel 动画滑入出现
-  - 视频2作为背景持续循环
-```
+- 卡片初始位置改为从画面**上方**飞入：`scale(0.3) translateY(-60vh)` → 飞到居中偏上的扇形位置
+- 卡片容器从 `items-end flex-1` 改为垂直居中，整体上移
+- 确保 `cardsAnimated` 状态正确触发 CSS transition 动画
 
-## 技术实现
+## 4. 视频2播放时保留主副标题 — `HeroSection.tsx`
 
-### 1. 复制视频文件到 `public/`
+当前 `cards-fly` 阶段标题就淡出了。修改逻辑：
 
-- `首次进入视频.mp4` → `public/videos/intro.mp4`
-- `2.mp4` → `public/videos/loop.mp4`
+- `intro` / `loop` / `cards-fly` 阶段都显示标题（opacity: 1）
+- 仅 `ready` 阶段标题才过渡到顶部较小的位置
+- `cards-fly` 时标题不淡出，让卡片在标题下方飞入
 
-### 2. 新增状态管理 — `src/pages/Index.tsx`
+## 5. 输入框出现更丝滑 + 间距调整 — `Index.tsx` + `CreationPanel.tsx`
 
-```typescript
-// 页面阶段
-type Phase = "intro" | "loop" | "cards-fly" | "ready";
+- 输入框距顶部 `64px`，与下方标题间距 `32px`，标题与卡片间距 `64px`
+- 输入框出现动画改用更丝滑的 transition：`opacity + transform` 结合，从 `translateY(-20px) opacity(0)` 过渡到 `translateY(0) opacity(1)`，duration 600ms
+- 不再用 `maxHeight` hack，改用更自然的动画方式
 
-const [phase, setPhase] = useState<Phase>("intro");
-const [showPanel, setShowPanel] = useState(false); // 输入框是否显示
-```
+## 6. 替换视频2 — `public/videos/loop.mp4`
 
-- `intro`: 视频1播放中
-- `loop`: 视频2开始播放
-- `cards-fly`: 视频2首次播完，卡片飞出动画进行中
-- `ready`: 卡片就位，正常交互
+用用户上传的 `2_1.mp4` 替换当前的 `loop.mp4`。
 
-### 3. 视频背景层 — `src/pages/Index.tsx`
-
-- 使用两个 `<video>` 元素，通过 opacity 切换
-- 视频1: `onEnded` → 设置 phase 为 `"loop"`
-- 视频2: 监听 `onEnded` 事件，首次触发时设置 phase 为 `"cards-fly"`，之后继续循环（`video.play()`）
-- 视频铺满整个内容区域，`object-fit: cover`
-
-### 4. 标题显示逻辑 — `HeroSection`
-
-- `phase === "intro" || phase === "loop"` 时居中显示标题+副标题
-- `phase === "cards-fly"` 时标题淡出（CSS transition opacity）
-- `phase === "ready"` 时标题隐藏或缩小到顶部
-
-### 5. 卡片飞出动画 — `src/pages/Index.tsx`
-
-当 `phase === "cards-fly"` 时：
-
-- 4张卡片初始状态：`scale(0.3) translate(中心位置)`，opacity 0
-- 依次延迟（每张间隔 100-150ms）通过 CSS transition 飞到扇形展开的最终位置
-- 动画完成后（约 1.2s）设置 phase 为 `"ready"`
-- 使用 `transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)` 实现弹性飞出效果
-
-### 6. CreationPanel 显示逻辑
-
-- 默认隐藏 (`showPanel = false`)
-- 点击任意卡片的 "Try this" → `setShowPanel(true)` + 填入 prompt
-- CreationPanel 从顶部滑入（`transform: translateY(-100%)` → `translateY(0)`，transition 0.4s）
-
-### 7. 刷新重播
-
-- 不使用 localStorage 持久化状态，每次刷新 phase 重置为 `"intro"`，自然重新播放整个流程
-
-## 需要修改的文件
+## 修改文件
 
 
-| 文件                                | 改动                                             |
-| --------------------------------- | ---------------------------------------------- |
-| `public/videos/`                  | 新增两个视频文件                                       |
-| `src/pages/Index.tsx`             | 添加 phase 状态机、视频背景层、卡片飞出动画逻辑、CreationPanel 条件显示 |
-| `src/components/HeroSection.tsx`  | 接收 phase prop，控制显示/淡出                          |
-| `src/components/TemplateCard.tsx` | onTry 回调不变，由父组件控制 showPanel                    |
+| 文件                                | 改动                         |
+| --------------------------------- | -------------------------- |
+| `src/components/TemplateCard.tsx` | 蒙层高度缩小，上边缘渐变一致             |
+| `src/components/HeroSection.tsx`  | 标题更大+黑色阴影，cards-fly 阶段保留标题 |
+| `src/pages/Index.tsx`             | 卡片飞入动画从上方、位置上移、输入框间距和动画优化  |
+| `public/videos/loop.mp4`          | 替换为新视频                     |
