@@ -59,7 +59,7 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
 
         {/* Try this button */}
         <div
-          className="flex justify-center transition-all duration-200 ease-out"
+          className="transition-all duration-200 ease-out items-center justify-center flex flex-row gap-[16px]"
           style={{
             opacity: hovered ? 1 : 0,
             transform: hovered ? "translateY(0)" : "translateY(6px)",
