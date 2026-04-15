@@ -125,30 +125,32 @@ const Index = () => {
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
+      {/* Video background — FULL SCREEN, behind sidebar */}
+      <div className="fixed inset-0 z-0">
+        <video
+          ref={introVideoRef}
+          src="/videos/intro.mp4"
+          className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+          style={{ opacity: isIntro ? 1 : 0 }}
+          autoPlay
+          muted
+          playsInline
+          onEnded={handleIntroEnded}
+        />
+        <video
+          ref={loopVideoRef}
+          src="/videos/loop.mp4"
+          className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+          style={{ opacity: !isIntro ? 1 : 0 }}
+          muted
+          playsInline
+          loop
+          onEnded={handleLoopEnded}
+        />
+      </div>
+
       <AppSidebar />
       <div className="flex-1 ml-[88px] flex flex-col h-screen overflow-hidden relative">
-        {/* Video background */}
-        <div className="absolute inset-0 z-0">
-          <video
-            ref={introVideoRef}
-            src="/videos/intro.mp4"
-            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-            style={{ opacity: isIntro ? 1 : 0 }}
-            autoPlay
-            muted
-            playsInline
-            onEnded={handleIntroEnded}
-          />
-          <video
-            ref={loopVideoRef}
-            src="/videos/loop.mp4"
-            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-            style={{ opacity: !isIntro ? 1 : 0 }}
-            muted
-            playsInline
-            onEnded={handleLoopEnded}
-          />
-        </div>
 
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-[1]">
@@ -242,7 +244,7 @@ const Index = () => {
           {templates.map((t, i) => {
             const origin = CARD_FLY_ORIGINS[i];
             const ct = CARD_FINAL_TRANSFORMS[i];
-            const delay = i * 60;
+            const delay = i * 80;
 
             // Start: top of page, different X positions
             const startX = contentLeft + (contentWidth * origin.xPercent) / 100;
@@ -265,7 +267,7 @@ const Index = () => {
                   willChange: "transform, opacity, filter",
                   perspective: "1200px",
                   // Outer: flight path (translate + scale + blur + opacity)
-                  animation: `cardFlight 1.6s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms both`,
+                  animation: `cardFlight 2.4s cubic-bezier(0.22, 0.61, 0.36, 1) ${delay}ms both`,
                   ["--fly-dx" as string]: `${endX - startX}px`,
                   ["--fly-dy" as string]: `${endY - startY}px`,
                   ["--card-rotate" as string]: `${ct.rotate}deg`,
@@ -279,7 +281,7 @@ const Index = () => {
                     aspectRatio: "3 / 4",
                     position: "relative",
                     transformStyle: "preserve-3d",
-                    animation: `cardFlip 1.6s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms both`,
+                    animation: `cardFlip 2.4s cubic-bezier(0.22, 0.61, 0.36, 1) ${delay}ms both`,
                   }}
                 >
                   {/* Front face */}
