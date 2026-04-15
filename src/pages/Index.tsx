@@ -65,34 +65,37 @@ const Index = () => {
 
   // Card style based on fly stage
   const getCardStyle = (i: number) => {
-    const delay = i * 80;
+    const delay = i * 90;
     const ct = cardTransforms[i];
 
     if (flyStage === "initial") {
-      // Start from TOP of page (poker card area) — translate UP from final position
-      // Cards end up roughly at vertical center, so we move them ~300px up + tiny scale + blur
       return {
-        transform: "translate3d(0, -280px, 0) scale(0.15) rotateY(180deg)",
+        transform: `translate3d(0, -240px, 0) scale(0.08) rotateX(24deg) rotateY(180deg) rotateZ(${(i - 1.5) * 5}deg)`,
         opacity: 0,
-        filter: "blur(12px)",
+        filter: "blur(10px)",
         width: "220px",
         marginLeft: i === 0 ? 0 : "-16px",
         zIndex: i === 1 || i === 2 ? 10 : 5,
         transformOrigin: "center center",
+        transformStyle: "preserve-3d",
+        backfaceVisibility: "hidden",
+        willChange: "transform, opacity, filter",
         transition: "none",
       };
     }
 
-    // Landed: final fan position with flip resolved
     return {
-      transform: `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg) scale(1) rotateY(0deg)`,
+      transform: `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg) scale(1) rotateX(0deg) rotateY(0deg)`,
       opacity: 1,
       filter: "blur(0px)",
       width: "220px",
       marginLeft: i === 0 ? 0 : "-16px",
       zIndex: i === 1 || i === 2 ? 10 : 5,
       transformOrigin: "bottom center",
-      transition: `transform 1.2s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, opacity 0.7s ease-out ${delay}ms, filter 0.8s ease-out ${delay}ms`,
+      transformStyle: "preserve-3d",
+      backfaceVisibility: "hidden",
+      willChange: "transform, opacity, filter",
+      transition: `transform 1.1s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, opacity 0.65s ease-out ${delay}ms, filter 0.8s ease-out ${delay}ms`,
     };
   };
 
@@ -135,9 +138,8 @@ const Index = () => {
 
         {/* Content layer */}
         <div className="relative z-10 flex flex-col h-full">
-          {/* CreationPanel — smooth slide in */}
           <div
-            className="flex-shrink-0"
+            className="absolute inset-x-0 top-0 z-20"
             style={{
               opacity: showPanel ? 1 : 0,
               transform: showPanel ? "translateY(0)" : "translateY(-20px)",
@@ -159,20 +161,17 @@ const Index = () => {
             />
           </div>
 
-          {/* Hero + Cards centered area — fixed position, does NOT move with panel */}
-          <div className="flex-1 flex flex-col items-center justify-center" style={{ marginTop: "-40px" }}>
-            {/* Title — always visible, position does NOT change with showPanel */}
+          <div className="flex-1 flex flex-col items-center justify-center" style={{ marginTop: phase === "intro" ? "0px" : "-72px" }}>
             <div>
-              <HeroSection phase={phase} showPanel={showPanel} />
+              <HeroSection phase={phase} />
             </div>
 
-            {/* Cards — 64px below title */}
             {showCards && (
               <div
-                className="transition-all duration-200 ease-out items-center justify-center flex flex-row gap-[16px]"
-                style={{ marginTop: "64px", perspective: "1200px" }}
+                className="transition-all duration-300 ease-out items-center justify-center flex flex-row gap-[16px]"
+                style={{ marginTop: "64px", perspective: "1600px" }}
               >
-                <div className="flex items-end">
+                <div className="flex items-end" style={{ transformStyle: "preserve-3d" }}>
                   {templates.map((t, i) => (
                     <div
                       key={t.id}
