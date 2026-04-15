@@ -5,20 +5,13 @@ interface FlippableCardProps {
 }
 
 /**
- * A card with two faces using CSS 3D transforms.
- * The PARENT applies the cardFlip animation (rotateY + scale) to this element.
- * This component only sets up backface-visibility for front/back.
+ * A card with two faces. The PARENT must have transformStyle: "preserve-3d"
+ * and apply the rotation animation. This component renders front/back
+ * with proper backface-visibility.
  */
 const FlippableCard = ({ front }: FlippableCardProps) => {
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        position: "relative",
-        transformStyle: "preserve-3d",
-      }}
-    >
+    <>
       {/* Front face */}
       <div
         style={{
@@ -27,6 +20,8 @@ const FlippableCard = ({ front }: FlippableCardProps) => {
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
           transform: "rotateY(0deg)",
+          borderRadius: "12px",
+          overflow: "hidden",
         }}
       >
         {front}
@@ -40,11 +35,13 @@ const FlippableCard = ({ front }: FlippableCardProps) => {
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
           transform: "rotateY(180deg)",
+          borderRadius: "12px",
+          overflow: "hidden",
         }}
       >
         <CardBack />
       </div>
-    </div>
+    </>
   );
 };
 
