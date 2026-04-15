@@ -28,14 +28,21 @@ const CARD_FLY_ORIGINS = [
 ];
 
 /**
- * Preload and decode all template images before animation starts.
+ * Preload and fully decode all template images into browser cache.
  */
+const preloadedUrls = new Set<string>();
+
 function preloadTemplateImages(): Promise<void> {
   return Promise.all(
     templates.map((t) => {
+      if (preloadedUrls.has(t.image)) return Promise.resolve();
       const img = new Image();
       img.src = t.image;
-      return img.decode().catch(() => {});
+      return img.decode().then(() => {
+        preloadedUrls.add(t.image);
+      }).catch(() => {
+        preloadedUrls.add(t.image);
+      });
     })
   ).then(() => {});
 }
@@ -55,43 +62,50 @@ const Index = () => {
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
   const flyEndCount = useRef(0);
+  const loopTriggered = useRef(false);
 
   const handleTry = useCallback((templatePrompt: string) => {
     setPrompt(templatePrompt);
     setShowPanel(true);
   }, []);
 
-  // Preload images when entering loop phase
+  // Preload images as early as possible (on mount)
   useEffect(() => {
-    if (phase === "loop" && !imagesReady) {
-      preloadTemplateImages().then(() => setImagesReady(true));
-    }
-  }, [phase, imagesReady]);
+    preloadTemplateImages().then(() => setImagesReady(true));
+  }, []);
 
-  // If images become ready after loop already played once, trigger cards immediately
+  const triggerCardsFly = useCallback(() => {
+    if (loopTriggered.current) return;
+    loopTriggered.current = true;
+    setPhase("cards-fly");
+    setCardsVisible(true);
+    flyEndCount.current = 0;
+  }, []);
+
+  // If images ready and loop has played once, trigger cards
   useEffect(() => {
     if (imagesReady && phase === "loop" && loopPlayCount.current >= 1) {
-      setPhase("cards-fly");
-      setCardsVisible(true);
-      flyEndCount.current = 0;
+      triggerCardsFly();
     }
-  }, [imagesReady, phase]);
+  }, [imagesReady, phase, triggerCardsFly]);
 
   const handleIntroEnded = useCallback(() => {
     setPhase("loop");
     loopPlayCount.current = 0;
+    loopTriggered.current = false;
   }, []);
 
-  const handleLoopEnded = useCallback(() => {
-    loopPlayCount.current += 1;
-    if (loopPlayCount.current >= 1 && imagesReady && phase === "loop") {
-      setPhase("cards-fly");
-      setCardsVisible(true);
-      flyEndCount.current = 0;
+  // Use timeupdate to detect first loop completion (since loop attr prevents onEnded)
+  const handleLoopTimeUpdate = useCallback(() => {
+    const vid = loopVideoRef.current;
+    if (!vid || !vid.duration || loopPlayCount.current >= 1) return;
+    if (vid.currentTime >= vid.duration - 0.15) {
+      loopPlayCount.current = 1;
+      if (imagesReady && phase === "loop") {
+        triggerCardsFly();
+      }
     }
-    // Manually restart loop video so it never stops
-    loopVideoRef.current?.play();
-  }, [imagesReady, phase]);
+  }, [imagesReady, phase, triggerCardsFly]);
 
   useEffect(() => {
     if (phase === "loop" && loopVideoRef.current) {
@@ -100,7 +114,6 @@ const Index = () => {
     }
   }, [phase]);
 
-  // Handle individual card flight end — only count outer flight animation
   const handleCardFlyEnd = useCallback((e: React.AnimationEvent) => {
     if (e.animationName === "cardFlight") {
       flyEndCount.current += 1;
@@ -113,7 +126,7 @@ const Index = () => {
 
   const isIntro = phase === "intro";
 
-  // Pre-compute layout values for flying cards
+  // Pre-compute layout
   const contentLeft = 88;
   const vw = typeof window !== "undefined" ? window.innerWidth : 1400;
   const vh = typeof window !== "undefined" ? window.innerHeight : 900;
@@ -126,7 +139,7 @@ const Index = () => {
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
-      {/* Video background — FULL SCREEN, behind sidebar */}
+      {/* Video background — FULL SCREEN, behind everything */}
       <div className="fixed inset-0 z-0">
         <video
           ref={introVideoRef}
@@ -145,14 +158,13 @@ const Index = () => {
           style={{ opacity: !isIntro ? 1 : 0 }}
           muted
           playsInline
-          
-          onEnded={handleLoopEnded}
+          loop
+          onTimeUpdate={handleLoopTimeUpdate}
         />
       </div>
 
       <AppSidebar />
       <div className="flex-1 ml-[88px] flex flex-col h-screen overflow-hidden relative">
-
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-[1]">
           <div
@@ -165,7 +177,7 @@ const Index = () => {
 
         {/* Content layer */}
         <div className="relative z-10 flex h-full flex-col">
-          {/* Input panel — fixed at top, overlays content, does NOT push stage */}
+          {/* Input panel — fixed at top, overlays content */}
           <div
             className="absolute inset-x-0 top-0 z-30"
             style={{
@@ -188,7 +200,7 @@ const Index = () => {
             />
           </div>
 
-          {/* Stage — FIXED position at 31%, never moves regardless of panel */}
+          {/* Stage — FIXED position at 31% */}
           {isIntro ? (
             <div className="flex-1 flex flex-col items-center justify-center">
               <HeroSection phase={phase} />
@@ -200,7 +212,7 @@ const Index = () => {
             >
               <HeroSection phase={phase} />
 
-              {/* Landed cards — only after flight completes */}
+              {/* Landed cards */}
               <div style={{ marginTop: `${TITLE_TO_CARDS_GAP}px`, pointerEvents: "auto" }}>
                 {cardsSettled && (
                   <div className="flex items-end justify-center">
@@ -232,7 +244,6 @@ const Index = () => {
       </div>
 
       {/* ========== FLYING CARDS LAYER ========== */}
-      {/* Fixed-position overlay — each card flies independently from its own start to its fan endpoint */}
       {cardsVisible && !cardsSettled && (
         <div
           style={{
@@ -247,11 +258,9 @@ const Index = () => {
             const ct = CARD_FINAL_TRANSFORMS[i];
             const delay = i * 80;
 
-            // Start: top of page, different X positions
             const startX = contentLeft + (contentWidth * origin.xPercent) / 100;
             const startY = vh * 0.08;
 
-            // End: exact fan position matching landed cards
             const endX = fanStartX + i * (CARD_WIDTH + CARD_OVERLAP) + CARD_WIDTH / 2 + ct.tx;
             const endY = cardsTopY + ct.ty;
 
@@ -267,22 +276,21 @@ const Index = () => {
                   zIndex: i === 1 || i === 2 ? 10 : 5,
                   willChange: "transform, opacity, filter",
                   perspective: "1200px",
-                  // Outer: flight path (translate + scale + blur + opacity)
-                  animation: `cardFlight 2.4s cubic-bezier(0.22, 0.61, 0.36, 1) ${delay}ms both`,
+                  animation: `cardFlight 2.4s cubic-bezier(0.25, 0.1, 0.25, 1) ${delay}ms both`,
                   ["--fly-dx" as string]: `${endX - startX}px`,
                   ["--fly-dy" as string]: `${endY - startY}px`,
                   ["--card-rotate" as string]: `${ct.rotate}deg`,
                   ["--start-rz" as string]: `${origin.startRotateZ}deg`,
                 }}
               >
-                {/* Inner: 3D flip (rotateY 180 → 0, back → front) */}
+                {/* Inner: 3D flip + scale synchronized */}
                 <div
                   style={{
                     width: "100%",
                     aspectRatio: "3 / 4",
                     position: "relative",
                     transformStyle: "preserve-3d",
-                    animation: `cardFlip 2.4s cubic-bezier(0.22, 0.61, 0.36, 1) ${delay}ms both`,
+                    animation: `cardFlip 2.4s cubic-bezier(0.25, 0.1, 0.25, 1) ${delay}ms both`,
                   }}
                 >
                   {/* Front face */}

@@ -12,8 +12,13 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
 
   return (
     <div
-      className="group relative isolate rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:ring-2 hover:ring-primary/40"
-      style={{ aspectRatio: "3/4", transform: "translateZ(0)" }}
+      className="group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:ring-2 hover:ring-primary/40"
+      style={{
+        aspectRatio: "3/4",
+        /* isolate stacking context so backdrop-filter works inside 3D parent */
+        isolation: "isolate",
+        transform: "translateZ(0)",
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -22,7 +27,7 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         alt={template.title}
         className="absolute inset-0 w-full h-full object-cover"
         loading="eager"
-        decoding="async"
+        decoding="sync"
       />
 
       {/* === THREE-LAYER OVERLAY — DO NOT REMOVE ANY LAYER === */}
