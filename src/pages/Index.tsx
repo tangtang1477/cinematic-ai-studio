@@ -89,6 +89,8 @@ const Index = () => {
       setCardsVisible(true);
       flyEndCount.current = 0;
     }
+    // Manually restart loop video so it never stops
+    loopVideoRef.current?.play();
   }, [imagesReady, phase]);
 
   useEffect(() => {
@@ -143,7 +145,7 @@ const Index = () => {
           style={{ opacity: !isIntro ? 1 : 0 }}
           muted
           playsInline
-          loop
+          
           onEnded={handleLoopEnded}
         />
       </div>
