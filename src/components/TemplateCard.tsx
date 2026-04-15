@@ -21,9 +21,10 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         src={template.image}
         alt={template.title}
         className="absolute inset-0 w-full h-full object-cover"
-        loading="lazy"
+        fetchPriority="high"
       />
 
+      {/* Top-edge gradient blur layer — DO NOT REMOVE */}
       <div
         className="absolute bottom-0 left-0 right-0 pointer-events-none"
         style={{
