@@ -5,8 +5,6 @@ interface HeroSectionProps {
 }
 
 const HeroSection = ({ phase }: HeroSectionProps) => {
-  const isIntro = phase === "intro";
-
   return (
     <section
       className="text-center transition-all duration-700 ease-out"
