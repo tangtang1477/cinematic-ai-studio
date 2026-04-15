@@ -16,6 +16,7 @@ const Index = () => {
 
   const [phase, setPhase] = useState<Phase>("intro");
   const [showPanel, setShowPanel] = useState(false);
+  const [cardsAnimated, setCardsAnimated] = useState(false);
   const loopPlayCount = useRef(0);
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
