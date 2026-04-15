@@ -12,13 +12,11 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
 
   return (
     <div
-      className="group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200
-        hover:ring-2 hover:ring-primary/40"
-      style={{ aspectRatio: "3/4" }}
+      className="group relative isolate rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:ring-2 hover:ring-primary/40"
+      style={{ aspectRatio: "3/4", transform: "translateZ(0)" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Image */}
       <img
         src={template.image}
         alt={template.title}
@@ -26,10 +24,10 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         loading="lazy"
       />
 
-      {/* Gradient blur transition zone — upper edge softener */}
       <div
-        className="absolute left-0 right-0 bottom-0 pointer-events-none"
+        className="absolute bottom-0 left-0 right-0 pointer-events-none"
         style={{
+          zIndex: 1,
           height: "90px",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
@@ -39,9 +37,7 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         }}
       />
 
-      {/* Content layer — relative container, text and button share same space */}
-      <div className="absolute bottom-0 left-0 right-0 px-3 py-2">
-        {/* Description text — 3 lines, tight to bottom */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 px-3 py-2">
         <div
           className="transition-all duration-200 ease-out"
           style={{
@@ -54,7 +50,6 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
           </p>
         </div>
 
-        {/* Try this button — absolute overlay, no extra space reserved */}
         <div
           className="absolute inset-0 flex items-center justify-center transition-all duration-200 ease-out"
           style={{
@@ -65,11 +60,10 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         >
           <button
             onClick={(e) => { e.stopPropagation(); onTry(template.prompt); }}
-            className="glass-btn flex items-center justify-center gap-1.5 px-4 py-2
-              text-foreground text-[12px] font-medium transition-all duration-200"
+            className="glass-btn flex items-center justify-center gap-1.5 px-4 py-2 text-foreground text-[12px] font-medium transition-all duration-200"
             style={{ borderRadius: "16px" }}
           >
-            <Sparkles className="w-3 h-3 relative z-10" />
+            <Sparkles className="relative z-10 h-3 w-3" />
             <span className="relative z-10">Try this</span>
           </button>
         </div>
