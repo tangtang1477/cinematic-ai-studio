@@ -6,7 +6,14 @@ interface FlippableCardProps {
 
 const FlippableCard = ({ front }: FlippableCardProps) => {
   return (
-    <>
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        transformStyle: "preserve-3d",
+      }}
+    >
       {/* Front face */}
       <div
         style={{
@@ -15,9 +22,10 @@ const FlippableCard = ({ front }: FlippableCardProps) => {
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
           transformStyle: "flat",
-          transform: "rotateY(0deg)",
+          transform: "rotateY(0deg) translateZ(0.1px)",
           borderRadius: "12px",
           overflow: "hidden",
+          willChange: "transform",
         }}
       >
         {front}
@@ -31,14 +39,15 @@ const FlippableCard = ({ front }: FlippableCardProps) => {
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
           transformStyle: "flat",
-          transform: "rotateY(180deg)",
+          transform: "rotateY(180deg) translateZ(0.1px)",
           borderRadius: "12px",
           overflow: "hidden",
+          willChange: "transform",
         }}
       >
         <CardBack />
       </div>
-    </>
+    </div>
   );
 };
 

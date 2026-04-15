@@ -60,6 +60,7 @@ const Index = () => {
   const [cardsVisible, setCardsVisible] = useState(false);
   const [cardsSettled, setCardsSettled] = useState(false);
   const [imagesReady, setImagesReady] = useState(false);
+  const [introReady, setIntroReady] = useState(false);
 
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
@@ -73,6 +74,14 @@ const Index = () => {
   // Preload images on mount
   useEffect(() => {
     preloadTemplateImages().then(() => setImagesReady(true));
+  }, []);
+
+  useEffect(() => {
+    const introVideo = introVideoRef.current;
+    const loopVideo = loopVideoRef.current;
+
+    introVideo?.load();
+    loopVideo?.load();
   }, []);
 
   // When intro ends → start loop video, enter "loop" phase
@@ -125,15 +134,25 @@ const Index = () => {
     <div className="h-screen bg-background flex overflow-hidden">
       {/* Video background — FULL SCREEN, behind everything */}
       <div className="fixed inset-0 z-0">
+        <img
+          src="/videos/intro-poster.jpg"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
+          style={{ opacity: isIntro && !introReady ? 1 : 0 }}
+        />
         <video
           ref={introVideoRef}
           src="/videos/intro.mp4"
           className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-          style={{ opacity: isIntro ? 1 : 0 }}
+          style={{ opacity: isIntro && introReady ? 1 : 0 }}
           autoPlay
           muted
           playsInline
           preload="auto"
+          poster="/videos/intro-poster.jpg"
+          onLoadedData={() => setIntroReady(true)}
+          onCanPlay={() => setIntroReady(true)}
           onEnded={handleIntroEnded}
         />
         <video
