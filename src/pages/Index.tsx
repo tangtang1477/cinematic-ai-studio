@@ -93,7 +93,7 @@ const Index = () => {
       marginLeft: i === 0 ? 0 : "-16px",
       zIndex: i === 1 || i === 2 ? 10 : 5,
       transformOrigin: "bottom center",
-      transition: `transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, opacity 0.6s ease-out ${delay}ms, filter 0.7s ease-out ${delay}ms`,
+      transition: `transform 1s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, opacity 0.6s ease-out ${delay}ms, filter 0.7s ease-out ${delay}ms`,
     };
   };
 
@@ -163,7 +163,7 @@ const Index = () => {
           {/* Hero + Cards centered area */}
           <div className="flex-1 flex flex-col items-center justify-center">
             {/* Title — always visible, 32px below panel when visible */}
-            <div style={{ marginTop: showPanel ? "32px" : "0" }}>
+            <div style={{ marginTop: showPanel ? "64px" : "0" }}>
               <HeroSection phase={phase} showPanel={showPanel} />
             </div>
 
