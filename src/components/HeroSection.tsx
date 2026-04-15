@@ -2,12 +2,10 @@ type Phase = "intro" | "loop" | "cards-fly" | "ready";
 
 interface HeroSectionProps {
   phase: Phase;
-  showPanel?: boolean;
 }
 
-const HeroSection = ({ phase, showPanel }: HeroSectionProps) => {
-  // Title is always visible. Only shrinks when showPanel is true.
-  const isLarge = phase === "intro" && !showPanel;
+const HeroSection = ({ phase }: HeroSectionProps) => {
+  const isLarge = phase === "intro";
 
   return (
     <section
@@ -20,7 +18,7 @@ const HeroSection = ({ phase, showPanel }: HeroSectionProps) => {
       <h1
         className="font-bold text-foreground leading-tight mb-3"
         style={{
-          fontSize: showPanel ? "32px" : isLarge ? "48px" : "40px",
+          fontSize: isLarge ? "48px" : "40px",
           textShadow: "0 2px 16px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.4), 0 0 60px rgba(113,240,246,0.15)",
           transition: "font-size 0.5s ease-out, padding 0.7s ease-out",
         }}
@@ -30,7 +28,7 @@ const HeroSection = ({ phase, showPanel }: HeroSectionProps) => {
       <p
         className="text-foreground/50 leading-[24px]"
         style={{
-          fontSize: showPanel ? "14px" : isLarge ? "20px" : "16px",
+          fontSize: isLarge ? "20px" : "16px",
           textShadow: "0 2px 12px rgba(0,0,0,0.6), 0 0 20px rgba(0,0,0,0.3)",
           transition: "font-size 0.5s ease-out",
         }}
