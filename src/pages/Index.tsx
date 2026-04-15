@@ -3,7 +3,7 @@ import AppSidebar from "@/components/AppSidebar";
 import HeroSection from "@/components/HeroSection";
 import CreationPanel from "@/components/CreationPanel";
 import TemplateCard from "@/components/TemplateCard";
-import FlippableCard from "@/components/FlippableCard";
+import CardBack from "@/components/CardBack";
 import { templates } from "@/data/templates";
 import type { AspectRatio } from "@/components/CreationPanel";
 
@@ -20,7 +20,6 @@ const CARD_FINAL_TRANSFORMS = [
   { rotate: 8, tx: -20, ty: 10 },
 ];
 
-// 4 different X origins simulating poker card positions in the video
 const CARD_FLY_ORIGINS = [
   { xPercent: 28, startRotateZ: -25 },
   { xPercent: 42, startRotateZ: -10 },
@@ -55,7 +54,6 @@ const Index = () => {
   const loopPlayCount = useRef(0);
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
   const flyEndCount = useRef(0);
 
   const handleTry = useCallback((templatePrompt: string) => {
@@ -101,32 +99,29 @@ const Index = () => {
     }
   }, [phase]);
 
-  // Handle individual card flight end via animationend
-  const handleCardFlyEnd = useCallback(() => {
-    flyEndCount.current += 1;
-    if (flyEndCount.current >= templates.length) {
-      setCardsSettled(true);
-      setPhase("ready");
+  // Handle individual card flight end — only count outer flight animation
+  const handleCardFlyEnd = useCallback((e: React.AnimationEvent) => {
+    if (e.animationName === "cardFlight") {
+      flyEndCount.current += 1;
+      if (flyEndCount.current >= templates.length) {
+        setCardsSettled(true);
+        setPhase("ready");
+      }
     }
   }, []);
 
-  // Measure panel height for dynamic offset
-  const [panelHeight, setPanelHeight] = useState(0);
-  useEffect(() => {
-    if (showPanel && panelRef.current) {
-      const h = panelRef.current.getBoundingClientRect().height;
-      setPanelHeight(h);
-    }
-  }, [showPanel]);
-
   const isIntro = phase === "intro";
 
-  // Calculate stage top: panel bottom + 64px gap when panel visible
-  const stageTop = showPanel ? `${64 + panelHeight + 64}px` : "31%";
-
-  // Calculate the final landing positions for each card (center of screen)
-  // We need absolute page coordinates for the flying layer
+  // Pre-compute layout values for flying cards
+  const contentLeft = 88;
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1400;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+  const contentWidth = vw - contentLeft;
   const totalCardsWidth = CARD_WIDTH * templates.length + CARD_OVERLAP * (templates.length - 1);
+  const fanStartX = contentLeft + (contentWidth - totalCardsWidth) / 2;
+  const stageTopPx = vh * 0.31;
+  const titleHeight = 70;
+  const cardsTopY = stageTopPx + titleHeight + TITLE_TO_CARDS_GAP;
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
@@ -138,7 +133,7 @@ const Index = () => {
             ref={introVideoRef}
             src="/videos/intro.mp4"
             className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-            style={{ opacity: phase === "intro" ? 1 : 0 }}
+            style={{ opacity: isIntro ? 1 : 0 }}
             autoPlay
             muted
             playsInline
@@ -148,7 +143,7 @@ const Index = () => {
             ref={loopVideoRef}
             src="/videos/loop.mp4"
             className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-            style={{ opacity: phase !== "intro" ? 1 : 0 }}
+            style={{ opacity: !isIntro ? 1 : 0 }}
             muted
             playsInline
             onEnded={handleLoopEnded}
@@ -167,9 +162,8 @@ const Index = () => {
 
         {/* Content layer */}
         <div className="relative z-10 flex h-full flex-col">
-          {/* Input panel — fixed at top */}
+          {/* Input panel — fixed at top, overlays content, does NOT push stage */}
           <div
-            ref={panelRef}
             className="absolute inset-x-0 top-0 z-30"
             style={{
               opacity: showPanel ? 1 : 0,
@@ -191,7 +185,7 @@ const Index = () => {
             />
           </div>
 
-          {/* Stage */}
+          {/* Stage — FIXED position at 31%, never moves regardless of panel */}
           {isIntro ? (
             <div className="flex-1 flex flex-col items-center justify-center">
               <HeroSection phase={phase} />
@@ -199,17 +193,13 @@ const Index = () => {
           ) : (
             <div
               className="absolute inset-x-0 z-10 flex flex-col items-center"
-              style={{
-                top: stageTop,
-                transition: "top 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
-                pointerEvents: "none",
-              }}
+              style={{ top: "31%", pointerEvents: "none" }}
             >
               <HeroSection phase={phase} />
 
-              {/* Settled/landed cards — only after flight completes */}
+              {/* Landed cards — only after flight completes */}
               <div style={{ marginTop: `${TITLE_TO_CARDS_GAP}px`, pointerEvents: "auto" }}>
-                {cardsSettled ? (
+                {cardsSettled && (
                   <div className="flex items-end justify-center">
                     {templates.map((t, i) => {
                       const ct = CARD_FINAL_TRANSFORMS[i];
@@ -231,7 +221,7 @@ const Index = () => {
                       );
                     })}
                   </div>
-                ) : null}
+                )}
               </div>
             </div>
           )}
@@ -239,7 +229,7 @@ const Index = () => {
       </div>
 
       {/* ========== FLYING CARDS LAYER ========== */}
-      {/* Fixed-position overlay OUTSIDE overflow-hidden so cards fly from real top coords */}
+      {/* Fixed-position overlay — each card flies independently from its own start to its fan endpoint */}
       {cardsVisible && !cardsSettled && (
         <div
           style={{
@@ -247,31 +237,24 @@ const Index = () => {
             inset: 0,
             zIndex: 50,
             pointerEvents: "none",
-            perspective: "2000px",
           }}
         >
           {templates.map((t, i) => {
             const origin = CARD_FLY_ORIGINS[i];
             const ct = CARD_FINAL_TRANSFORMS[i];
-            const delay = i * 50;
+            const delay = i * 60;
 
-            // Calculate final X position: center of content area + card offset
-            const contentLeft = 88; // sidebar width
-            const contentWidth = typeof window !== "undefined" ? window.innerWidth - contentLeft : 1200;
-            const fanStartX = contentLeft + contentWidth / 2 - totalCardsWidth / 2;
-            const finalX = fanStartX + i * (CARD_WIDTH + CARD_OVERLAP) + CARD_WIDTH / 2;
-
-            // Final Y: approximately 55% of viewport height (center stage area)
-            const finalY = typeof window !== "undefined" ? window.innerHeight * 0.55 : 500;
-
-            // Start X: percentage of content area
+            // Start: top of page, different X positions
             const startX = contentLeft + (contentWidth * origin.xPercent) / 100;
-            const startY = typeof window !== "undefined" ? window.innerHeight * 0.1 : 80;
+            const startY = vh * 0.08;
+
+            // End: exact fan position matching landed cards
+            const endX = fanStartX + i * (CARD_WIDTH + CARD_OVERLAP) + CARD_WIDTH / 2 + ct.tx;
+            const endY = cardsTopY + ct.ty;
 
             return (
               <div
                 key={`fly-${t.id}`}
-                className="card-fly-individual"
                 onAnimationEnd={handleCardFlyEnd}
                 style={{
                   position: "absolute",
@@ -279,20 +262,55 @@ const Index = () => {
                   left: `${startX - CARD_WIDTH / 2}px`,
                   top: `${startY}px`,
                   zIndex: i === 1 || i === 2 ? 10 : 5,
-                  transformStyle: "preserve-3d",
                   willChange: "transform, opacity, filter",
-                  animation: `cardFlyIndividual 1.6s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms both`,
-                  ["--fly-dx" as string]: `${finalX - startX}px`,
-                  ["--fly-dy" as string]: `${finalY - startY}px`,
+                  perspective: "1200px",
+                  // Outer: flight path (translate + scale + blur + opacity)
+                  animation: `cardFlight 1.6s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms both`,
+                  ["--fly-dx" as string]: `${endX - startX}px`,
+                  ["--fly-dy" as string]: `${endY - startY}px`,
                   ["--card-rotate" as string]: `${ct.rotate}deg`,
-                  ["--card-tx" as string]: `${ct.tx}px`,
-                  ["--card-ty" as string]: `${ct.ty}px`,
                   ["--start-rz" as string]: `${origin.startRotateZ}deg`,
                 }}
               >
-                <FlippableCard
-                  front={<TemplateCard template={t} onTry={handleTry} />}
-                />
+                {/* Inner: 3D flip (rotateY 180 → 0, back → front) */}
+                <div
+                  style={{
+                    width: "100%",
+                    aspectRatio: "3 / 4",
+                    position: "relative",
+                    transformStyle: "preserve-3d",
+                    animation: `cardFlip 1.6s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms both`,
+                  }}
+                >
+                  {/* Front face */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backfaceVisibility: "hidden",
+                      WebkitBackfaceVisibility: "hidden",
+                      transform: "rotateY(0deg)",
+                      borderRadius: "12px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <TemplateCard template={t} onTry={handleTry} />
+                  </div>
+                  {/* Back face */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backfaceVisibility: "hidden",
+                      WebkitBackfaceVisibility: "hidden",
+                      transform: "rotateY(180deg)",
+                      borderRadius: "12px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <CardBack />
+                  </div>
+                </div>
               </div>
             );
           })}
