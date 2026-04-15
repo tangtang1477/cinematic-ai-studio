@@ -1,23 +1,30 @@
 import cardBackImg from "@/assets/card-back.jpg";
 
 /**
- * Poker card back — uses the uploaded card-back image with white border frame.
+ * Poker card back — uses <img> for reliable rendering inside 3D contexts.
  */
 const CardBack = () => (
   <div
-    className="w-full h-full rounded-xl overflow-hidden"
     style={{
+      width: "100%",
+      height: "100%",
+      borderRadius: "12px",
+      overflow: "hidden",
       background: "#fff",
       padding: "6px",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)",
+      boxShadow:
+        "0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)",
     }}
   >
-    <div
-      className="w-full h-full rounded-lg overflow-hidden"
+    <img
+      src={cardBackImg}
+      alt="Card back"
       style={{
-        backgroundImage: `url(${cardBackImg})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        borderRadius: "8px",
+        display: "block",
       }}
     />
   </div>

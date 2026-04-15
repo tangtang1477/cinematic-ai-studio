@@ -3,7 +3,7 @@ import AppSidebar from "@/components/AppSidebar";
 import HeroSection from "@/components/HeroSection";
 import CreationPanel from "@/components/CreationPanel";
 import TemplateCard from "@/components/TemplateCard";
-import CardBack from "@/components/CardBack";
+import FlippableCard from "@/components/FlippableCard";
 import { templates } from "@/data/templates";
 import type { AspectRatio } from "@/components/CreationPanel";
 
@@ -38,11 +38,14 @@ function preloadTemplateImages(): Promise<void> {
       if (preloadedUrls.has(t.image)) return Promise.resolve();
       const img = new Image();
       img.src = t.image;
-      return img.decode().then(() => {
-        preloadedUrls.add(t.image);
-      }).catch(() => {
-        preloadedUrls.add(t.image);
-      });
+      return img
+        .decode()
+        .then(() => {
+          preloadedUrls.add(t.image);
+        })
+        .catch(() => {
+          preloadedUrls.add(t.image);
+        });
     })
   ).then(() => {});
 }
@@ -58,55 +61,35 @@ const Index = () => {
   const [cardsSettled, setCardsSettled] = useState(false);
   const [imagesReady, setImagesReady] = useState(false);
 
-  const loopPlayCount = useRef(0);
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
   const flyEndCount = useRef(0);
-  const loopTriggered = useRef(false);
 
   const handleTry = useCallback((templatePrompt: string) => {
     setPrompt(templatePrompt);
     setShowPanel(true);
   }, []);
 
-  // Preload images as early as possible (on mount)
+  // Preload images on mount
   useEffect(() => {
     preloadTemplateImages().then(() => setImagesReady(true));
   }, []);
 
-  const triggerCardsFly = useCallback(() => {
-    if (loopTriggered.current) return;
-    loopTriggered.current = true;
+  // When intro ends → start loop video, enter "loop" phase
+  const handleIntroEnded = useCallback(() => {
+    setPhase("loop");
+  }, []);
+
+  // When loop video starts playing → immediately trigger card fly-in
+  const handleLoopPlaying = useCallback(() => {
+    // Only trigger once
+    if (phase !== "loop") return;
     setPhase("cards-fly");
     setCardsVisible(true);
     flyEndCount.current = 0;
-  }, []);
+  }, [phase]);
 
-  // If images ready and loop has played once, trigger cards
-  useEffect(() => {
-    if (imagesReady && phase === "loop" && loopPlayCount.current >= 1) {
-      triggerCardsFly();
-    }
-  }, [imagesReady, phase, triggerCardsFly]);
-
-  const handleIntroEnded = useCallback(() => {
-    setPhase("loop");
-    loopPlayCount.current = 0;
-    loopTriggered.current = false;
-  }, []);
-
-  // Use timeupdate to detect first loop completion (since loop attr prevents onEnded)
-  const handleLoopTimeUpdate = useCallback(() => {
-    const vid = loopVideoRef.current;
-    if (!vid || !vid.duration || loopPlayCount.current >= 1) return;
-    if (vid.currentTime >= vid.duration - 0.15) {
-      loopPlayCount.current = 1;
-      if (imagesReady && phase === "loop") {
-        triggerCardsFly();
-      }
-    }
-  }, [imagesReady, phase, triggerCardsFly]);
-
+  // Start loop video when entering loop phase
   useEffect(() => {
     if (phase === "loop" && loopVideoRef.current) {
       loopVideoRef.current.currentTime = 0;
@@ -131,7 +114,8 @@ const Index = () => {
   const vw = typeof window !== "undefined" ? window.innerWidth : 1400;
   const vh = typeof window !== "undefined" ? window.innerHeight : 900;
   const contentWidth = vw - contentLeft;
-  const totalCardsWidth = CARD_WIDTH * templates.length + CARD_OVERLAP * (templates.length - 1);
+  const totalCardsWidth =
+    CARD_WIDTH * templates.length + CARD_OVERLAP * (templates.length - 1);
   const fanStartX = contentLeft + (contentWidth - totalCardsWidth) / 2;
   const stageTopPx = vh * 0.31;
   const titleHeight = 70;
@@ -159,7 +143,7 @@ const Index = () => {
           muted
           playsInline
           loop
-          onTimeUpdate={handleLoopTimeUpdate}
+          onPlaying={handleLoopPlaying}
         />
       </div>
 
@@ -170,7 +154,8 @@ const Index = () => {
           <div
             className="absolute inset-0"
             style={{
-              background: "radial-gradient(ellipse at 50% 70%, rgba(113,240,246,0.06) 0%, transparent 70%)",
+              background:
+                "radial-gradient(ellipse at 50% 70%, rgba(113,240,246,0.06) 0%, transparent 70%)",
             }}
           />
         </div>
@@ -185,7 +170,8 @@ const Index = () => {
               transform: showPanel ? "translateY(0)" : "translateY(-20px)",
               pointerEvents: showPanel ? "auto" : "none",
               paddingTop: "64px",
-              transition: "opacity 0.45s ease-out, transform 0.45s ease-out",
+              transition:
+                "opacity 0.45s ease-out, transform 0.45s ease-out",
             }}
           >
             <CreationPanel
@@ -213,7 +199,12 @@ const Index = () => {
               <HeroSection phase={phase} />
 
               {/* Landed cards */}
-              <div style={{ marginTop: `${TITLE_TO_CARDS_GAP}px`, pointerEvents: "auto" }}>
+              <div
+                style={{
+                  marginTop: `${TITLE_TO_CARDS_GAP}px`,
+                  pointerEvents: "auto",
+                }}
+              >
                 {cardsSettled && (
                   <div className="flex items-end justify-center">
                     {templates.map((t, i) => {
@@ -244,7 +235,7 @@ const Index = () => {
       </div>
 
       {/* ========== FLYING CARDS LAYER ========== */}
-      {cardsVisible && !cardsSettled && (
+      {cardsVisible && !cardsSettled && imagesReady && (
         <div
           style={{
             position: "fixed",
@@ -258,10 +249,15 @@ const Index = () => {
             const ct = CARD_FINAL_TRANSFORMS[i];
             const delay = i * 80;
 
-            const startX = contentLeft + (contentWidth * origin.xPercent) / 100;
+            const startX =
+              contentLeft + (contentWidth * origin.xPercent) / 100;
             const startY = vh * 0.08;
 
-            const endX = fanStartX + i * (CARD_WIDTH + CARD_OVERLAP) + CARD_WIDTH / 2 + ct.tx;
+            const endX =
+              fanStartX +
+              i * (CARD_WIDTH + CARD_OVERLAP) +
+              CARD_WIDTH / 2 +
+              ct.tx;
             const endY = cardsTopY + ct.ty;
 
             return (
@@ -271,6 +267,7 @@ const Index = () => {
                 style={{
                   position: "absolute",
                   width: `${CARD_WIDTH}px`,
+                  aspectRatio: "3 / 4",
                   left: `${startX - CARD_WIDTH / 2}px`,
                   top: `${startY}px`,
                   zIndex: i === 1 || i === 2 ? 10 : 5,
@@ -283,44 +280,24 @@ const Index = () => {
                   ["--start-rz" as string]: `${origin.startRotateZ}deg`,
                 }}
               >
-                {/* Inner: 3D flip + scale synchronized */}
+                {/* Inner: FlippableCard handles 3D front/back */}
                 <div
                   style={{
                     width: "100%",
-                    aspectRatio: "3 / 4",
-                    position: "relative",
+                    height: "100%",
                     transformStyle: "preserve-3d",
                     animation: `cardFlip 2.4s cubic-bezier(0.25, 0.1, 0.25, 1) ${delay}ms both`,
                   }}
                 >
-                  {/* Front face */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      backfaceVisibility: "hidden",
-                      WebkitBackfaceVisibility: "hidden",
-                      transform: "rotateY(0deg)",
-                      borderRadius: "12px",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <TemplateCard template={t} onTry={handleTry} />
-                  </div>
-                  {/* Back face */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      backfaceVisibility: "hidden",
-                      WebkitBackfaceVisibility: "hidden",
-                      transform: "rotateY(180deg)",
-                      borderRadius: "12px",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <CardBack />
-                  </div>
+                  <FlippableCard
+                    front={
+                      <TemplateCard
+                        template={t}
+                        onTry={handleTry}
+                        noOverlay
+                      />
+                    }
+                  />
                 </div>
               </div>
             );
