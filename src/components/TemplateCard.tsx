@@ -24,17 +24,25 @@ const TemplateCard = ({ template, onTry }: TemplateCardProps) => {
         fetchPriority="high"
       />
 
-      {/* Top-edge gradient blur layer — DO NOT REMOVE */}
+      {/* Upper gradient blur transition — DO NOT REMOVE */}
       <div
         className="absolute bottom-0 left-0 right-0 pointer-events-none"
         style={{
           zIndex: 1,
-          height: "90px",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.5) 100%)",
-          maskImage: "linear-gradient(to bottom, transparent 0%, black 60%)",
-          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 60%)",
+          height: "110px",
+          background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.6) 100%)",
+        }}
+      />
+      {/* Bottom blur layer — DO NOT REMOVE */}
+      <div
+        className="absolute bottom-0 left-0 right-0 pointer-events-none"
+        style={{
+          zIndex: 2,
+          height: "70px",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 50%)",
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 50%)",
         }}
       />
 

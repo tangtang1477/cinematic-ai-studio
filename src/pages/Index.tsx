@@ -70,6 +70,15 @@ const Index = () => {
     }
   }, [phase, imagesReady]);
 
+  // If images become ready after loop already played once, trigger cards immediately
+  useEffect(() => {
+    if (imagesReady && phase === "loop" && loopPlayCount.current >= 1) {
+      setPhase("cards-fly");
+      setCardsVisible(true);
+      flyEndCount.current = 0;
+    }
+  }, [imagesReady, phase]);
+
   const handleIntroEnded = useCallback(() => {
     setPhase("loop");
     loopPlayCount.current = 0;
@@ -77,13 +86,13 @@ const Index = () => {
 
   const handleLoopEnded = useCallback(() => {
     loopPlayCount.current += 1;
-    if (loopPlayCount.current === 1 && imagesReady) {
+    if (loopPlayCount.current >= 1 && imagesReady && phase === "loop") {
       setPhase("cards-fly");
       setCardsVisible(true);
       flyEndCount.current = 0;
     }
     loopVideoRef.current?.play();
-  }, [imagesReady]);
+  }, [imagesReady, phase]);
 
   useEffect(() => {
     if (phase === "loop" && loopVideoRef.current) {
