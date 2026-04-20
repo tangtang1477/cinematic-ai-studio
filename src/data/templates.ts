@@ -1,8 +1,8 @@
-import template11 from "@/assets/template-11.png";
-import template05 from "@/assets/template-05.png";
-import template08 from "@/assets/template-08.png";
-import template12 from "@/assets/template-12.png";
-import template03 from "@/assets/template-03.png";
+import template11 from "@/assets/template-11-sm.webp";
+import template05 from "@/assets/template-05-sm.webp";
+import template08 from "@/assets/template-08-sm.webp";
+import template12 from "@/assets/template-12-sm.webp";
+import template03 from "@/assets/template-03-sm.webp";
 
 export interface Template {
   id: string;
