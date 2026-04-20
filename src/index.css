@@ -161,9 +161,6 @@
       transform:
         translate3d(0, 0, 0)
         rotateZ(var(--start-rz, 0deg));
-      opacity: 0;
-    }
-    15% {
       opacity: 1;
     }
     40% {
@@ -174,6 +171,7 @@
           0
         )
         rotateZ(calc(var(--start-rz, 0deg) * 0.3));
+      opacity: 1;
     }
     100% {
       transform:
@@ -184,21 +182,16 @@
   }
 
   /*
-   * Card Flip Animation (inner wrapper)
-   * Handles: rotateY 180→0 AND scale 0.06→1 simultaneously
-   * "边放大边翻转" — zoom and flip are synchronized
-   */
-  /*
    * Card Flip — back-to-front rotation synchronized with fly-in.
-   * Starts showing back face (rotateY 180), ends showing front (rotateY 360 ≡ 0).
-   * Scale grows from tiny to full to give the "zooming in while flipping" feel.
+   * Hold back face (rotateY 180°) for the first 25% so the blue poker
+   * back is clearly visible while the card scales up, then flip to front.
    */
   @keyframes cardFlip {
     0% {
-      transform: rotateY(180deg) scale(0.1);
+      transform: rotateY(180deg) scale(0.15);
     }
-    60% {
-      transform: rotateY(90deg) scale(0.6);
+    25% {
+      transform: rotateY(180deg) scale(0.35);
     }
     100% {
       transform: rotateY(0deg) scale(1);
