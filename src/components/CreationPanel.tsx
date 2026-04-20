@@ -67,6 +67,7 @@ const Tabs = ({
     audiobook: null,
   });
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const [hovered, setHovered] = useState<CreationMode | null>(null);
 
   useEffect(() => {
     const btn = btnRefs.current[activeMode];
@@ -87,14 +88,23 @@ const Tabs = ({
     >
       {tabs.map((t) => {
         const active = activeMode === t.value;
+        const isHovered = hovered === t.value;
+        const color = active
+          ? "hsl(var(--foreground))"
+          : isHovered
+          ? "hsla(0,0%,100%,0.7)"
+          : "hsla(0,0%,100%,0.4)";
         return (
           <button
             key={t.value}
             ref={(el) => (btnRefs.current[t.value] = el)}
             onClick={() => onModeChange(t.value)}
-            className="relative pb-2 text-[13px] font-medium transition-colors"
+            onMouseEnter={() => setHovered(t.value)}
+            onMouseLeave={() => setHovered(null)}
+            className="relative pb-2 text-[13px] font-medium"
             style={{
-              color: active ? "hsl(var(--foreground))" : "hsla(0,0%,100%,0.4)",
+              color,
+              transition: "color 0.2s ease",
             }}
           >
             {t.label}
