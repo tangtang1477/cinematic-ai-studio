@@ -105,30 +105,7 @@ const CreationPanel = ({
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(113,240,246,0.03)",
         }}
       >
-        {/* Tabs */}
-        <div className="px-5 pt-3 flex items-center gap-5 border-b border-white/5">
-          {tabs.map((t) => {
-            const active = mode === t.value;
-            return (
-              <button
-                key={t.value}
-                onClick={() => onModeChange(t.value)}
-                className="relative pb-2 text-[13px] font-medium transition-colors"
-                style={{
-                  color: active ? "hsl(var(--foreground))" : "hsla(0,0%,100%,0.4)",
-                }}
-              >
-                {t.label}
-                {active && (
-                  <span
-                    className="absolute left-0 right-0 -bottom-px h-[2px] rounded-full"
-                    style={{ background: "hsl(var(--primary))" }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <Tabs activeMode={mode} onModeChange={onModeChange} />
 
         {/* Input area */}
         <div className="px-5 pt-3 pb-1">
