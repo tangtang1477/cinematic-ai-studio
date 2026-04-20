@@ -317,7 +317,7 @@ const Index = () => {
         >
           {templates.map((t, i) => {
             const ct = CARD_FINAL_TRANSFORMS[i];
-            const delay = i * 70;
+            const delay = i * 50;
 
             // Same start Y for all 5 cards — just below the input panel top edge.
             // Different start X — evenly spaced horizontally, centered on viewport.
@@ -332,6 +332,9 @@ const Index = () => {
               ct.tx;
             const endY = cardsTopY + ct.ty;
 
+            // Center card pops forward; neighbors mid; outer back.
+            const zIndex = i === 2 ? 20 : i === 1 || i === 3 ? 10 : 5;
+
             return (
               <div
                 key={`fly-${t.id}`}
@@ -342,10 +345,10 @@ const Index = () => {
                   aspectRatio: "3 / 4",
                   left: `${startX - CARD_WIDTH / 2}px`,
                   top: `${startY}px`,
-                  zIndex: i === 1 || i === 2 ? 10 : 5,
+                  zIndex,
                   willChange: "transform, opacity, filter",
-                  perspective: "1400px",
-                  animation: `cardFlight 1.5s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both`,
+                  perspective: "1100px",
+                  animation: `cardFlight 1.4s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both`,
                   ["--fly-dx" as string]: `${endX - startX}px`,
                   ["--fly-dy" as string]: `${endY - startY}px`,
                 }}
@@ -356,7 +359,7 @@ const Index = () => {
                     width: "100%",
                     height: "100%",
                     transformStyle: "preserve-3d",
-                    animation: `cardFlip 1.5s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both`,
+                    animation: `cardFlip 1.4s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both`,
                   }}
                 >
                   <FlippableCard
