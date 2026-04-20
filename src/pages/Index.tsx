@@ -140,8 +140,15 @@ const Index = () => {
   // Strict gate: trigger fly-in only when loop video is ACTUALLY playing AND all images decoded.
   useEffect(() => {
     if (loopActuallyPlaying && imagesReady && phase !== "cards-fly" && phase !== "ready") {
-      setPhase("cards-fly");
-      setCardsVisible(true);
+      // Extra 250ms delay so loop video fade-in finishes and the user's eyes
+      // are settled on the scene before cards start flying.
+      const t = setTimeout(() => {
+        // eslint-disable-next-line no-console
+        console.log("[Index] triggering fly-in");
+        setPhase("cards-fly");
+        setCardsVisible(true);
+      }, 250);
+      return () => clearTimeout(t);
     }
   }, [loopActuallyPlaying, imagesReady, phase]);
 
