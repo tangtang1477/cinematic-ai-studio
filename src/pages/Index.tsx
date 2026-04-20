@@ -84,8 +84,15 @@ const Index = () => {
 
   // Only load intro video upfront — defer loop.mp4 until intro is ready to play,
   // so they don't fight for bandwidth on cold cache (incognito).
+  // Load BOTH videos upfront in incognito-cold-cache scenarios so loop is ready
+  // by the time intro ends. Browser will throttle by priority anyway.
   useEffect(() => {
     introVideoRef.current?.load();
+    const loop = loopVideoRef.current;
+    if (loop) {
+      loop.preload = "auto";
+      loop.load();
+    }
   }, []);
 
   // Once intro is actually playing, immediately start aggressive preload of loop.
