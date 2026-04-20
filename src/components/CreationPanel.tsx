@@ -1,4 +1,5 @@
 import { Wand2, ChevronDown, Mic } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
@@ -53,6 +54,69 @@ const tabs: { value: CreationMode; label: string }[] = [
   { value: "audiobook", label: "Audiobooks" },
 ];
 
+const Tabs = ({
+  activeMode,
+  onModeChange,
+}: {
+  activeMode: CreationMode;
+  onModeChange: (val: CreationMode) => void;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const btnRefs = useRef<Record<CreationMode, HTMLButtonElement | null>>({
+    story: null,
+    audiobook: null,
+  });
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    const btn = btnRefs.current[activeMode];
+    const container = containerRef.current;
+    if (!btn || !container) return;
+    const btnRect = btn.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    setIndicator({
+      left: btnRect.left - containerRect.left,
+      width: btnRect.width,
+    });
+  }, [activeMode]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative px-5 pt-3 flex items-center gap-5 border-b border-white/5"
+    >
+      {tabs.map((t) => {
+        const active = activeMode === t.value;
+        return (
+          <button
+            key={t.value}
+            ref={(el) => (btnRefs.current[t.value] = el)}
+            onClick={() => onModeChange(t.value)}
+            className="relative pb-2 text-[13px] font-medium transition-colors"
+            style={{
+              color: active ? "hsl(var(--foreground))" : "hsla(0,0%,100%,0.4)",
+            }}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+      <span
+        aria-hidden="true"
+        className="absolute -bottom-px h-[2px] rounded-full pointer-events-none"
+        style={{
+          background: "hsl(var(--primary))",
+          left: 0,
+          width: `${indicator.width}px`,
+          transform: `translateX(${indicator.left}px)`,
+          transition:
+            "transform 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s cubic-bezier(0.4,0,0.2,1)",
+        }}
+      />
+    </div>
+  );
+};
+
 const RatioIcon = ({ w, h, size = 14 }: { w: number; h: number; size?: number }) => {
   const maxDim = size;
   const scale = maxDim / Math.max(w, h);
@@ -104,30 +168,7 @@ const CreationPanel = ({
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(113,240,246,0.03)",
         }}
       >
-        {/* Tabs */}
-        <div className="px-5 pt-3 flex items-center gap-5 border-b border-white/5">
-          {tabs.map((t) => {
-            const active = mode === t.value;
-            return (
-              <button
-                key={t.value}
-                onClick={() => onModeChange(t.value)}
-                className="relative pb-2 text-[13px] font-medium transition-colors"
-                style={{
-                  color: active ? "hsl(var(--foreground))" : "hsla(0,0%,100%,0.4)",
-                }}
-              >
-                {t.label}
-                {active && (
-                  <span
-                    className="absolute left-0 right-0 -bottom-px h-[2px] rounded-full"
-                    style={{ background: "hsl(var(--primary))" }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <Tabs activeMode={mode} onModeChange={onModeChange} />
 
         {/* Input area */}
         <div className="px-5 pt-3 pb-1">

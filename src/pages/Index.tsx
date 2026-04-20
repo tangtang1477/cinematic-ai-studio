@@ -87,9 +87,8 @@ const Index = () => {
     introVideoRef.current?.load();
   }, []);
 
-  // Once intro can play smoothly, start preloading loop in the background.
-  const handleIntroCanPlay = useCallback(() => {
-    setIntroReady(true);
+  // Once intro is actually playing, immediately start aggressive preload of loop.
+  const handleIntroPlaying = useCallback(() => {
     const loop = loopVideoRef.current;
     if (loop && loop.preload !== "auto") {
       loop.preload = "auto";
@@ -97,40 +96,55 @@ const Index = () => {
     }
   }, []);
 
-  // When intro ends → start loop video, enter "loop" phase
-  const handleIntroEnded = useCallback(() => {
-    setPhase("loop");
+  const handleIntroCanPlay = useCallback(() => {
+    setIntroReady(true);
   }, []);
 
-  // When loop video starts playing → wait for images, then trigger card fly-in
+  // Cross-fade: when intro is < 1.2s from end and loop is buffered, start loop early.
+  const handleIntroTimeUpdate = useCallback(() => {
+    const intro = introVideoRef.current;
+    const loop = loopVideoRef.current;
+    if (!intro || !loop) return;
+    if (phase !== "intro") return;
+    const remaining = intro.duration - intro.currentTime;
+    if (
+      isFinite(remaining) &&
+      remaining < 1.2 &&
+      loop.readyState >= 3 &&
+      loop.paused
+    ) {
+      loop.currentTime = 0;
+      loop.play().catch(() => {});
+      setPhase("loop");
+    }
+  }, [phase]);
+
+  // Fallback: if onTimeUpdate didn't fire the early swap, ensure loop starts on intro end.
+  const handleIntroEnded = useCallback(() => {
+    setPhase((p) => (p === "intro" ? "loop" : p));
+  }, []);
+
+  // When loop video starts playing → mark loop active (fly-in is gated by useEffect below)
   const handleLoopPlaying = useCallback(() => {
-    if (phase !== "loop") return;
-    const trigger = () => {
+    // No-op: fly-in is now driven by [phase, imagesReady] effect below.
+  }, []);
+
+  // Ensure loop video is playing once we enter loop phase
+  useEffect(() => {
+    if (phase !== "intro" && loopVideoRef.current && loopVideoRef.current.paused) {
+      loopVideoRef.current.currentTime = 0;
+      loopVideoRef.current.play().catch(() => {});
+    }
+  }, [phase]);
+
+  // Strict gate: trigger fly-in only when loop phase reached AND all images decoded.
+  useEffect(() => {
+    if ((phase === "loop") && imagesReady) {
       setPhase("cards-fly");
       setCardsVisible(true);
       flyEndCount.current = 0;
-    };
-    if (imagesReady) {
-      trigger();
-    } else {
-      const id = setInterval(() => {
-        if (preloadedUrls.size >= templates.length) {
-          clearInterval(id);
-          setImagesReady(true);
-          trigger();
-        }
-      }, 50);
-      setTimeout(() => clearInterval(id), 3000);
     }
   }, [phase, imagesReady]);
-
-  // Start loop video when entering loop phase
-  useEffect(() => {
-    if (phase === "loop" && loopVideoRef.current) {
-      loopVideoRef.current.currentTime = 0;
-      loopVideoRef.current.play();
-    }
-  }, [phase]);
 
   const handleCardFlyEnd = useCallback((e: React.AnimationEvent) => {
     if (e.animationName === "cardFlight") {
@@ -179,6 +193,8 @@ const Index = () => {
           poster="/videos/intro-poster.jpg"
           onLoadedData={() => setIntroReady(true)}
           onCanPlay={handleIntroCanPlay}
+          onPlaying={handleIntroPlaying}
+          onTimeUpdate={handleIntroTimeUpdate}
           onEnded={handleIntroEnded}
         />
         <video
