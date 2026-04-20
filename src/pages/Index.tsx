@@ -14,17 +14,19 @@ const CARD_OVERLAP = -16;
 const TITLE_TO_CARDS_GAP = 64;
 
 const CARD_FINAL_TRANSFORMS = [
-  { rotate: -8, tx: 20, ty: 10 },
-  { rotate: -3, tx: 6, ty: 0 },
-  { rotate: 3, tx: -6, ty: 0 },
-  { rotate: 8, tx: -20, ty: 10 },
+  { rotate: -12, tx: 36, ty: 18 },
+  { rotate: -6, tx: 14, ty: 4 },
+  { rotate: 0, tx: 0, ty: -2 },
+  { rotate: 6, tx: -14, ty: 4 },
+  { rotate: 12, tx: -36, ty: 18 },
 ];
 
 const CARD_FLY_ORIGINS = [
-  { xPercent: 28, startRotateZ: -25 },
-  { xPercent: 42, startRotateZ: -10 },
-  { xPercent: 58, startRotateZ: 10 },
-  { xPercent: 72, startRotateZ: 25 },
+  { xPercent: 22, startRotateZ: -28 },
+  { xPercent: 36, startRotateZ: -14 },
+  { xPercent: 50, startRotateZ: 0 },
+  { xPercent: 64, startRotateZ: 14 },
+  { xPercent: 78, startRotateZ: 28 },
 ];
 
 /**
@@ -55,6 +57,8 @@ const Index = () => {
   const [duration, setDuration] = useState("1");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [voiceover, setVoiceover] = useState(false);
+  const [mode, setMode] = useState<"story" | "audiobook">("story");
+  const [voice, setVoice] = useState("warm-female");
   const [phase, setPhase] = useState<Phase>("intro");
   const [showPanel, setShowPanel] = useState(false);
   const [cardsVisible, setCardsVisible] = useState(false);
@@ -68,6 +72,7 @@ const Index = () => {
 
   const handleTry = useCallback((templatePrompt: string) => {
     setPrompt(templatePrompt);
+    setMode("story");
     setShowPanel(true);
   }, []);
 
@@ -97,14 +102,27 @@ const Index = () => {
     setPhase("loop");
   }, []);
 
-  // When loop video starts playing → immediately trigger card fly-in
+  // When loop video starts playing → wait for images, then trigger card fly-in
   const handleLoopPlaying = useCallback(() => {
-    // Only trigger once
     if (phase !== "loop") return;
-    setPhase("cards-fly");
-    setCardsVisible(true);
-    flyEndCount.current = 0;
-  }, [phase]);
+    const trigger = () => {
+      setPhase("cards-fly");
+      setCardsVisible(true);
+      flyEndCount.current = 0;
+    };
+    if (imagesReady) {
+      trigger();
+    } else {
+      const id = setInterval(() => {
+        if (preloadedUrls.size >= templates.length) {
+          clearInterval(id);
+          setImagesReady(true);
+          trigger();
+        }
+      }, 50);
+      setTimeout(() => clearInterval(id), 3000);
+    }
+  }, [phase, imagesReady]);
 
   // Start loop video when entering loop phase
   useEffect(() => {
@@ -212,6 +230,10 @@ const Index = () => {
               onAspectRatioChange={setAspectRatio}
               voiceover={voiceover}
               onVoiceoverChange={setVoiceover}
+              mode={mode}
+              onModeChange={setMode}
+              voice={voice}
+              onVoiceChange={setVoice}
             />
           </div>
 
