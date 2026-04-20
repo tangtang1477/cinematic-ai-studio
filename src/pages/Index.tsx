@@ -21,13 +21,9 @@ const CARD_FINAL_TRANSFORMS = [
   { rotate: 12, tx: -36, ty: 18 },
 ];
 
-const CARD_FLY_ORIGINS = [
-  { xPercent: 22, startRotateZ: -28 },
-  { xPercent: 36, startRotateZ: -14 },
-  { xPercent: 50, startRotateZ: 0 },
-  { xPercent: 64, startRotateZ: 14 },
-  { xPercent: 78, startRotateZ: 28 },
-];
+// Same start Y for all cards; different X positions evenly spaced
+// roughly across the width of the input panel (max-w-[720px] centered).
+const CARD_FLY_ORIGIN_OFFSETS_X = [-160, -80, 0, 80, 160];
 
 /**
  * Preload and fully decode all template images into browser cache.

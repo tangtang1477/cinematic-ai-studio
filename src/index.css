@@ -151,47 +151,58 @@
 
   /*
    * =============================================
-   * Card Flight Animation (outer wrapper)
-   * Handles: position, blur, opacity, rotation
-   * Scale is now handled here AND in cardFlip to sync zoom+flip
+   * Card Flight (outer wrapper) — translate + filter only
+   * 5 cards share same start Y, different start X.
+   * Slight overshoot near the end for a premium feel.
    * =============================================
    */
   @keyframes cardFlight {
     0% {
-      transform:
-        translate3d(0, 0, 0)
-        rotateZ(var(--start-rz, 0deg));
-      opacity: 1;
+      transform: translate3d(0, 0, 0);
+      opacity: 0;
+      filter: blur(6px);
     }
-    40% {
-      transform:
-        translate3d(
-          calc(var(--fly-dx, 0px) * 0.5),
-          calc(var(--fly-dy, 0px) * 0.45),
-          0
-        )
-        rotateZ(calc(var(--start-rz, 0deg) * 0.3));
+    12% {
       opacity: 1;
+      filter: blur(2px);
+    }
+    70% {
+      filter: blur(0);
+    }
+    85% {
+      transform: translate3d(
+        calc(var(--fly-dx, 0px) * 1.015),
+        calc(var(--fly-dy, 0px) * 1.01),
+        0
+      );
+      opacity: 1;
+      filter: blur(0);
     }
     100% {
-      transform:
-        translate3d(var(--fly-dx, 0px), var(--fly-dy, 0px), 0)
-        rotateZ(var(--card-rotate, 0deg));
+      transform: translate3d(var(--fly-dx, 0px), var(--fly-dy, 0px), 0);
       opacity: 1;
+      filter: blur(0);
     }
   }
 
   /*
-   * Card Flip — back-to-front rotation synchronized with fly-in.
-   * Hold back face (rotateY 180°) for the first 25% so the blue poker
-   * back is clearly visible while the card scales up, then flip to front.
+   * Card Flip (inner) — synchronized rotateY + scale.
+   * Hold the back face long enough to be clearly visible during the
+   * first third of the flight, then flip to the front while finishing
+   * the scale-up. End with a tiny overshoot for the premium feel.
    */
   @keyframes cardFlip {
     0% {
-      transform: rotateY(180deg) scale(0.15);
+      transform: rotateY(180deg) scale(0.4);
     }
-    25% {
-      transform: rotateY(180deg) scale(0.35);
+    30% {
+      transform: rotateY(180deg) scale(0.55);
+    }
+    70% {
+      transform: rotateY(40deg) scale(0.92);
+    }
+    88% {
+      transform: rotateY(0deg) scale(1.04);
     }
     100% {
       transform: rotateY(0deg) scale(1);
