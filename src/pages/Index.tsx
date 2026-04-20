@@ -59,6 +59,7 @@ const Index = () => {
   const [imagesReady, setImagesReady] = useState(false);
   const [introReady, setIntroReady] = useState(false);
   const [loopActuallyPlaying, setLoopActuallyPlaying] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
@@ -69,6 +70,14 @@ const Index = () => {
     setMode("story");
     setShowPanel(true);
   }, []);
+
+  const handleTryWithSelect = useCallback(
+    (templateId: string) => (templatePrompt: string) => {
+      handleTry(templatePrompt);
+      setSelectedId((prev) => (prev === templateId ? null : templateId));
+    },
+    [handleTry]
+  );
 
   // Preload images on mount
   useEffect(() => {
@@ -288,20 +297,36 @@ const Index = () => {
                   <div className="flex items-end justify-center">
                     {templates.map((t, i) => {
                       const ct = CARD_FINAL_TRANSFORMS[i];
+                      const isSelected = selectedId === t.id;
+                      const isDimmed = selectedId !== null && !isSelected;
+                      const baseTransform = `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg)`;
+                      const selectedTransform = `translate3d(${ct.tx}px, ${ct.ty - 20}px, 0) rotate(0deg) scale(1.05)`;
+                      const dimmedTransform = `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg) scale(0.96)`;
                       return (
                         <div
                           key={t.id}
                           style={{
                             width: `${CARD_WIDTH}px`,
                             marginLeft: i === 0 ? 0 : `${CARD_OVERLAP}px`,
-                            zIndex: i === 1 || i === 2 ? 10 : 5,
-                            transform: `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg)`,
+                            zIndex: isSelected ? 30 : i === 1 || i === 2 ? 10 : 5,
+                            transform: isSelected
+                              ? selectedTransform
+                              : isDimmed
+                              ? dimmedTransform
+                              : baseTransform,
+                            opacity: isDimmed ? 0.5 : 1,
+                            filter: isDimmed ? "saturate(0.7)" : "none",
+                            borderRadius: "12px",
+                            boxShadow: isSelected
+                              ? "0 0 0 2px hsl(var(--primary)), 0 0 28px hsl(var(--primary) / 0.55), 0 18px 40px rgba(0,0,0,0.5)"
+                              : "none",
                             transformOrigin: "bottom center",
-                            transition: "transform 0.3s ease-out",
+                            transition:
+                              "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), filter 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
                           }}
                           className="hover:!-translate-y-5 hover:!rotate-0 hover:!z-20"
                         >
-                          <TemplateCard template={t} onTry={handleTry} />
+                          <TemplateCard template={t} onTry={handleTryWithSelect(t.id)} />
                         </div>
                       );
                     })}
