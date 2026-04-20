@@ -15,6 +15,8 @@ const CardBack = () => (
       borderRadius: "12px",
       pointerEvents: "none",
       userSelect: "none",
+      transform: "scale(1.08)",
+      transformOrigin: "center",
     }}
   />
 );
