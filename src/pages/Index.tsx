@@ -59,15 +59,17 @@ const Index = () => {
   const [imagesReady, setImagesReady] = useState(false);
   const [introReady, setIntroReady] = useState(false);
   const [loopActuallyPlaying, setLoopActuallyPlaying] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
   
 
-  const handleTry = useCallback((templatePrompt: string) => {
+  const handleTry = useCallback((templatePrompt: string, templateId: string) => {
     setPrompt(templatePrompt);
     setMode("story");
     setShowPanel(true);
+    setSelectedId((prev) => (prev === templateId ? null : templateId));
   }, []);
 
   // Preload images on mount
