@@ -134,7 +134,7 @@ const Index = () => {
 
   // When loop video starts playing → mark loop active (fly-in is gated by useEffect below)
   const handleLoopPlaying = useCallback(() => {
-    // No-op: fly-in is now driven by [phase, imagesReady] effect below.
+    setLoopActuallyPlaying(true);
   }, []);
 
   // Ensure loop video is playing once we enter loop phase
@@ -145,14 +145,14 @@ const Index = () => {
     }
   }, [phase]);
 
-  // Strict gate: trigger fly-in only when loop phase reached AND all images decoded.
+  // Strict gate: trigger fly-in only when loop video is ACTUALLY playing AND all images decoded.
   useEffect(() => {
-    if ((phase === "loop") && imagesReady) {
+    if (loopActuallyPlaying && imagesReady && phase !== "cards-fly" && phase !== "ready") {
       setPhase("cards-fly");
       setCardsVisible(true);
       flyEndCount.current = 0;
     }
-  }, [phase, imagesReady]);
+  }, [loopActuallyPlaying, imagesReady, phase]);
 
   const handleCardFlyEnd = useCallback((e: React.AnimationEvent) => {
     if (e.animationName === "cardFlight") {
