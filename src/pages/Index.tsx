@@ -211,7 +211,7 @@ const Index = () => {
           className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
           style={{ opacity: !isIntro ? 1 : 0 }}
           muted
-          preload="none"
+          preload="auto"
           playsInline
           loop
           onPlaying={handleLoopPlaying}
