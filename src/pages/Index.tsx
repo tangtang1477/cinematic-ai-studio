@@ -316,13 +316,14 @@ const Index = () => {
           }}
         >
           {templates.map((t, i) => {
-            const origin = CARD_FLY_ORIGINS[i];
             const ct = CARD_FINAL_TRANSFORMS[i];
-            const delay = i * 80;
+            const delay = i * 70;
 
-            const startX =
-              contentLeft + (contentWidth * origin.xPercent) / 100;
-            const startY = vh * 0.08;
+            // Same start Y for all 5 cards — just below the input panel top edge.
+            // Different start X — evenly spaced horizontally, centered on viewport.
+            const viewportCenterX = contentLeft + contentWidth / 2;
+            const startX = viewportCenterX + CARD_FLY_ORIGIN_OFFSETS_X[i];
+            const startY = 110;
 
             const endX =
               fanStartX +
@@ -343,12 +344,10 @@ const Index = () => {
                   top: `${startY}px`,
                   zIndex: i === 1 || i === 2 ? 10 : 5,
                   willChange: "transform, opacity, filter",
-                  perspective: "1200px",
-                  animation: `cardFlight 2.4s cubic-bezier(0.25, 0.1, 0.25, 1) ${delay}ms both`,
+                  perspective: "1400px",
+                  animation: `cardFlight 1.5s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both`,
                   ["--fly-dx" as string]: `${endX - startX}px`,
                   ["--fly-dy" as string]: `${endY - startY}px`,
-                  ["--card-rotate" as string]: `${ct.rotate}deg`,
-                  ["--start-rz" as string]: `${origin.startRotateZ}deg`,
                 }}
               >
                 {/* Inner: FlippableCard handles 3D front/back */}
