@@ -142,7 +142,6 @@ const Index = () => {
     if (loopActuallyPlaying && imagesReady && phase !== "cards-fly" && phase !== "ready") {
       setPhase("cards-fly");
       setCardsVisible(true);
-      flyEndCount.current = 0;
     }
   }, [loopActuallyPlaying, imagesReady, phase]);
 
