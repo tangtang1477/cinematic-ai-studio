@@ -356,7 +356,7 @@ const Index = () => {
                     width: "100%",
                     height: "100%",
                     transformStyle: "preserve-3d",
-                    animation: `cardFlip 2.4s cubic-bezier(0.25, 0.1, 0.25, 1) ${delay}ms both`,
+                    animation: `cardFlip 1.5s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both`,
                   }}
                 >
                   <FlippableCard
