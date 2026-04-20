@@ -65,12 +65,19 @@ const Index = () => {
   const loopVideoRef = useRef<HTMLVideoElement>(null);
   
 
-  const handleTry = useCallback((templatePrompt: string, templateId: string) => {
+  const handleTry = useCallback((templatePrompt: string) => {
     setPrompt(templatePrompt);
     setMode("story");
     setShowPanel(true);
-    setSelectedId((prev) => (prev === templateId ? null : templateId));
   }, []);
+
+  const handleTryWithSelect = useCallback(
+    (templateId: string) => (templatePrompt: string) => {
+      handleTry(templatePrompt);
+      setSelectedId((prev) => (prev === templateId ? null : templateId));
+    },
+    [handleTry]
+  );
 
   // Preload images on mount
   useEffect(() => {
