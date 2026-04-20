@@ -6,6 +6,7 @@ import TemplateCard from "@/components/TemplateCard";
 import FlyingCardsScene from "@/components/FlyingCardsScene";
 import { templates } from "@/data/templates";
 import type { AspectRatio } from "@/components/CreationPanel";
+import cardBackImg from "@/assets/card-back-sm.webp";
 
 type Phase = "intro" | "loop" | "cards-fly" | "ready";
 
@@ -74,17 +75,9 @@ const Index = () => {
     preloadTemplateImages().then(() => setImagesReady(true));
   }, []);
 
-  // Only load intro video upfront — defer loop.mp4 until intro is ready to play,
-  // so they don't fight for bandwidth on cold cache (incognito).
-  // Load BOTH videos upfront in incognito-cold-cache scenarios so loop is ready
-  // by the time intro ends. Browser will throttle by priority anyway.
+  // SERIAL load: intro first (gets full bandwidth), loop only after intro starts playing.
   useEffect(() => {
     introVideoRef.current?.load();
-    const loop = loopVideoRef.current;
-    if (loop) {
-      loop.preload = "auto";
-      loop.load();
-    }
   }, []);
 
   // Once intro is actually playing, immediately start aggressive preload of loop.
