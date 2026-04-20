@@ -6,6 +6,7 @@ import TemplateCard from "@/components/TemplateCard";
 import FlyingCardsScene from "@/components/FlyingCardsScene";
 import { templates } from "@/data/templates";
 import type { AspectRatio } from "@/components/CreationPanel";
+import cardBackImg from "@/assets/card-back-sm.webp";
 
 type Phase = "intro" | "loop" | "cards-fly" | "ready";
 
@@ -74,17 +75,9 @@ const Index = () => {
     preloadTemplateImages().then(() => setImagesReady(true));
   }, []);
 
-  // Only load intro video upfront — defer loop.mp4 until intro is ready to play,
-  // so they don't fight for bandwidth on cold cache (incognito).
-  // Load BOTH videos upfront in incognito-cold-cache scenarios so loop is ready
-  // by the time intro ends. Browser will throttle by priority anyway.
+  // SERIAL load: intro first (gets full bandwidth), loop only after intro starts playing.
   useEffect(() => {
     introVideoRef.current?.load();
-    const loop = loopVideoRef.current;
-    if (loop) {
-      loop.preload = "auto";
-      loop.load();
-    }
   }, []);
 
   // Once intro is actually playing, immediately start aggressive preload of loop.
@@ -204,11 +197,29 @@ const Index = () => {
           className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
           style={{ opacity: !isIntro ? 1 : 0 }}
           muted
-          preload="auto"
+          preload="metadata"
           playsInline
           loop
           onPlaying={handleLoopPlaying}
         />
+        {/* Hidden preload layer — keeps decoded bitmaps in the live DOM so
+            the flying cards hit the texture cache instantly on landing. */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            overflow: "hidden",
+            opacity: 0,
+            pointerEvents: "none",
+          }}
+        >
+          {templates.map((t) => (
+            <img key={t.id} src={t.image} alt="" decoding="async" loading="eager" />
+          ))}
+          <img src={cardBackImg} alt="" decoding="async" loading="eager" />
+        </div>
       </div>
 
       <AppSidebar />
