@@ -65,6 +65,7 @@ const Index = () => {
   const [cardsSettled, setCardsSettled] = useState(false);
   const [imagesReady, setImagesReady] = useState(false);
   const [introReady, setIntroReady] = useState(false);
+  const [loopActuallyPlaying, setLoopActuallyPlaying] = useState(false);
 
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
