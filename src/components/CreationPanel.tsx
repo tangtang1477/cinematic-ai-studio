@@ -1,4 +1,5 @@
 import { Wand2, ChevronDown, Mic } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
