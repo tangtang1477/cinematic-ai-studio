@@ -65,6 +65,7 @@ const Index = () => {
   const [cardsSettled, setCardsSettled] = useState(false);
   const [imagesReady, setImagesReady] = useState(false);
   const [introReady, setIntroReady] = useState(false);
+  const [loopActuallyPlaying, setLoopActuallyPlaying] = useState(false);
 
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
@@ -83,8 +84,15 @@ const Index = () => {
 
   // Only load intro video upfront — defer loop.mp4 until intro is ready to play,
   // so they don't fight for bandwidth on cold cache (incognito).
+  // Load BOTH videos upfront in incognito-cold-cache scenarios so loop is ready
+  // by the time intro ends. Browser will throttle by priority anyway.
   useEffect(() => {
     introVideoRef.current?.load();
+    const loop = loopVideoRef.current;
+    if (loop) {
+      loop.preload = "auto";
+      loop.load();
+    }
   }, []);
 
   // Once intro is actually playing, immediately start aggressive preload of loop.
@@ -126,7 +134,7 @@ const Index = () => {
 
   // When loop video starts playing → mark loop active (fly-in is gated by useEffect below)
   const handleLoopPlaying = useCallback(() => {
-    // No-op: fly-in is now driven by [phase, imagesReady] effect below.
+    setLoopActuallyPlaying(true);
   }, []);
 
   // Ensure loop video is playing once we enter loop phase
@@ -137,14 +145,14 @@ const Index = () => {
     }
   }, [phase]);
 
-  // Strict gate: trigger fly-in only when loop phase reached AND all images decoded.
+  // Strict gate: trigger fly-in only when loop video is ACTUALLY playing AND all images decoded.
   useEffect(() => {
-    if ((phase === "loop") && imagesReady) {
+    if (loopActuallyPlaying && imagesReady && phase !== "cards-fly" && phase !== "ready") {
       setPhase("cards-fly");
       setCardsVisible(true);
       flyEndCount.current = 0;
     }
-  }, [phase, imagesReady]);
+  }, [loopActuallyPlaying, imagesReady, phase]);
 
   const handleCardFlyEnd = useCallback((e: React.AnimationEvent) => {
     if (e.animationName === "cardFlight") {
@@ -203,7 +211,7 @@ const Index = () => {
           className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
           style={{ opacity: !isIntro ? 1 : 0 }}
           muted
-          preload="none"
+          preload="auto"
           playsInline
           loop
           onPlaying={handleLoopPlaying}
