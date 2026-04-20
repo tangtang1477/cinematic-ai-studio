@@ -2,6 +2,7 @@ import template11 from "@/assets/template-11.png";
 import template05 from "@/assets/template-05.png";
 import template08 from "@/assets/template-08.png";
 import template12 from "@/assets/template-12.png";
+import template03 from "@/assets/template-03.png";
 
 export interface Template {
   id: string;
@@ -54,5 +55,15 @@ export const templates: Template[] = [
     category: "3D",
     gradient: "",
     image: template12,
+  },
+  {
+    id: "5",
+    title: "Cyberpunk Noir",
+    description: "Neon-soaked cyberpunk streets meet film noir storytelling. Rain-slick alleys, holographic billboards, and shadowy characters create a moody, atmospheric near-future world.",
+    prompt: "Cyberpunk noir cityscape with neon-drenched rain-slick streets, holographic billboards, shadowy trench-coated figures, moody atmospheric lighting, near-future dystopia aesthetic.",
+    tags: [],
+    category: "3D",
+    gradient: "",
+    image: template03,
   },
 ];

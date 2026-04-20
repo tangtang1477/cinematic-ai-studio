@@ -188,21 +188,26 @@
    * Handles: rotateY 180→0 AND scale 0.06→1 simultaneously
    * "边放大边翻转" — zoom and flip are synchronized
    */
+  /*
+   * Card Flip — back-to-front rotation synchronized with fly-in.
+   * Starts showing back face (rotateY 180), ends showing front (rotateY 360 ≡ 0).
+   * Scale grows from tiny to full to give the "zooming in while flipping" feel.
+   */
   @keyframes cardFlip {
     0% {
-      transform: rotateY(180deg) scale(0.06);
+      transform: rotateY(180deg) scale(0.08);
     }
     30% {
-      transform: rotateY(140deg) scale(0.35);
+      transform: rotateY(220deg) scale(0.35);
     }
     55% {
-      transform: rotateY(60deg) scale(0.7);
+      transform: rotateY(280deg) scale(0.7);
     }
     80% {
-      transform: rotateY(10deg) scale(0.95);
+      transform: rotateY(330deg) scale(0.95);
     }
     100% {
-      transform: rotateY(0deg) scale(1);
+      transform: rotateY(360deg) scale(1);
     }
   }
 }
