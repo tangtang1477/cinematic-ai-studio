@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import type { Template } from "@/data/templates";
 import TemplateCard from "./TemplateCard";
@@ -25,9 +25,9 @@ const CARD_FINAL_TRANSFORMS = [
 
 const START_X_OFFSETS = [-160, -80, 0, 80, 160];
 const START_Y = 110;
-const DURATION = 1.4;
+const DURATION = 1.6;
 const STAGGER = 0.06;
-const FLIP_HOLD = 0.35; // hold back face for first 350ms
+const FLIP_HOLD = 0.45;
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface SparkleEvent {
@@ -39,8 +39,8 @@ interface SparkleEvent {
 const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) => {
   const [sparkles, setSparkles] = useState<SparkleEvent[]>([]);
   const [settledCount, setSettledCount] = useState(0);
+  const sparkleIdRef = useRef(0);
 
-  // Compute layout once
   const layout = useMemo(() => {
     const vw = typeof window !== "undefined" ? window.innerWidth : 1400;
     const vh = typeof window !== "undefined" ? window.innerHeight : 900;
@@ -58,8 +58,7 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
       const ct = CARD_FINAL_TRANSFORMS[i];
       const startX = viewportCenterX + START_X_OFFSETS[i] - CARD_WIDTH / 2;
       const startY = START_Y;
-      const endX =
-        fanStartX + i * (CARD_WIDTH + CARD_OVERLAP) + ct.tx;
+      const endX = fanStartX + i * (CARD_WIDTH + CARD_OVERLAP) + ct.tx;
       const endY = cardsTopY + ct.ty;
       return {
         startX,
@@ -67,7 +66,6 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
         endX,
         endY,
         rotate: ct.rotate,
-        // Center card pops forward; neighbors mid; outer back.
         zIndex: i === 2 ? 20 : i === 1 || i === 3 ? 10 : 5,
       };
     });
@@ -75,23 +73,26 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
 
   useEffect(() => {
     if (settledCount >= templates.length) {
-      // Let final sparkles play out briefly, then notify parent.
       const t = setTimeout(() => onAllSettled(), 250);
       return () => clearTimeout(t);
     }
   }, [settledCount, templates.length, onAllSettled]);
 
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[FlyingCardsScene] mounted — animation starting");
+  }, []);
+
   const handleCardComplete = (i: number) => {
     const l = layout[i];
-    // Sparkle origin: card's landing center
     const x = l.endX + CARD_WIDTH / 2;
-    const y = l.endY + (CARD_WIDTH * 4) / 3 / 2; // 3:4 aspect
-    setSparkles((prev) => [...prev, { id: Date.now() + i, x, y }]);
+    const y = l.endY + (CARD_WIDTH * 4) / 3 / 2;
+    const id = ++sparkleIdRef.current;
+    setSparkles((prev) => [...prev, { id, x, y }]);
     setSettledCount((c) => c + 1);
 
-    // Auto-clean sparkle after its lifetime
     setTimeout(() => {
-      setSparkles((prev) => prev.filter((s) => s.id !== Date.now() + i));
+      setSparkles((prev) => prev.filter((s) => s.id !== id));
     }, 700);
   };
 
@@ -103,7 +104,6 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
         inset: 0,
         zIndex: 50,
         pointerEvents: "none",
-        perspective: "1400px",
       }}
     >
       {templates.map((t, i) => {
@@ -116,14 +116,14 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
             initial={{
               x: l.startX,
               y: l.startY,
-              scale: 0.4,
+              rotate: 0,
               opacity: 0,
               filter: "blur(6px)",
             }}
             animate={{
               x: l.endX,
               y: l.endY,
-              scale: 1,
+              rotate: l.rotate,
               opacity: 1,
               filter: "blur(0px)",
             }}
@@ -131,8 +131,8 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
               duration: DURATION,
               delay,
               ease: EASE,
-              opacity: { duration: 0.4, delay, ease: "easeOut" },
-              filter: { duration: 0.6, delay, ease: "easeOut" },
+              opacity: { duration: 0.5, delay, ease: "easeOut" },
+              filter: { duration: 0.7, delay, ease: "easeOut" },
             }}
             onAnimationComplete={() => handleCardComplete(i)}
             style={{
@@ -142,7 +142,6 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
               width: CARD_WIDTH,
               aspectRatio: "3 / 4",
               zIndex: l.zIndex,
-              transformStyle: "preserve-3d",
               willChange: "transform, opacity, filter",
             }}
           >
@@ -150,7 +149,7 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
             <motion.div
               className="glow-trail"
               initial={{ opacity: 0.85, scale: 0.4 }}
-              animate={{ opacity: 0, scale: 1.25 }}
+              animate={{ opacity: 0, scale: 1.3 }}
               transition={{
                 duration: DURATION,
                 delay,
@@ -160,63 +159,85 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
                 position: "absolute",
                 inset: -40,
                 background:
-                  "radial-gradient(circle, rgba(113,240,246,0.55) 0%, rgba(113,240,246,0.18) 40%, rgba(113,240,246,0) 70%)",
+                  "radial-gradient(circle, rgba(113,240,246,0.6) 0%, rgba(113,240,246,0.18) 40%, rgba(113,240,246,0) 70%)",
                 filter: "blur(14px)",
                 pointerEvents: "none",
                 zIndex: -1,
               }}
             />
 
-            {/* Card inner — handles 3D flip */}
-            <motion.div
-              className="card-inner"
-              initial={{ rotateY: 180 }}
-              animate={{ rotateY: 0 }}
-              transition={{
-                duration: DURATION - FLIP_HOLD,
-                delay: delay + FLIP_HOLD,
-                ease: EASE,
-              }}
+            {/* Per-card 3D stage — isolates perspective from outer 2D matrix */}
+            <div
+              className="card-3d-stage"
               style={{
                 position: "relative",
                 width: "100%",
                 height: "100%",
+                perspective: "1200px",
                 transformStyle: "preserve-3d",
               }}
             >
-              {/* Front */}
-              <div
-                className="card-front"
+              {/* Inner — handles rotateY + scale (true 3D) */}
+              <motion.div
+                className="card-inner"
+                initial={{ rotateY: 180, scale: 0.3 }}
+                animate={{ rotateY: 0, scale: 1 }}
+                transition={{
+                  rotateY: {
+                    duration: DURATION - FLIP_HOLD,
+                    delay: delay + FLIP_HOLD,
+                    ease: EASE,
+                  },
+                  scale: {
+                    duration: DURATION,
+                    delay,
+                    ease: EASE,
+                  },
+                }}
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  backfaceVisibility: "hidden",
-                  WebkitBackfaceVisibility: "hidden",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  transform: `rotate(${l.rotate}deg)`,
-                  transformOrigin: "center center",
+                  position: "relative",
+                  width: "100%",
+                  height: "100%",
+                  transformStyle: "preserve-3d",
+                  willChange: "transform",
                 }}
               >
-                <TemplateCard template={t} onTry={() => {}} noOverlay />
-              </div>
+                {/* Front */}
+                <div
+                  className="card-front"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    backfaceVisibility: "hidden",
+                    WebkitBackfaceVisibility: "hidden",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    boxShadow:
+                      "0 20px 50px -12px rgba(0,0,0,0.55), 0 0 24px rgba(113,240,246,0.15)",
+                  }}
+                >
+                  <TemplateCard template={t} onTry={() => {}} noOverlay />
+                </div>
 
-              {/* Back */}
-              <div
-                className="card-back"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backfaceVisibility: "hidden",
-                  WebkitBackfaceVisibility: "hidden",
-                  transform: "rotateY(180deg)",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                }}
-              >
-                <CardBack />
-              </div>
-            </motion.div>
+                {/* Back */}
+                <div
+                  className="card-back"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    backfaceVisibility: "hidden",
+                    WebkitBackfaceVisibility: "hidden",
+                    transform: "rotateY(180deg)",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    boxShadow:
+                      "0 20px 50px -12px rgba(0,0,0,0.55), 0 0 24px rgba(113,240,246,0.25)",
+                  }}
+                >
+                  <CardBack />
+                </div>
+              </motion.div>
+            </div>
           </motion.div>
         );
       })}
