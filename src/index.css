@@ -162,11 +162,9 @@
         translate3d(0, 0, 0)
         rotateZ(var(--start-rz, 0deg));
       opacity: 0;
-      filter: blur(12px);
     }
-    10% {
+    15% {
       opacity: 1;
-      filter: blur(6px);
     }
     40% {
       transform:
@@ -176,14 +174,12 @@
           0
         )
         rotateZ(calc(var(--start-rz, 0deg) * 0.3));
-      filter: blur(2px);
     }
     100% {
       transform:
         translate3d(var(--fly-dx, 0px), var(--fly-dy, 0px), 0)
         rotateZ(var(--card-rotate, 0deg));
       opacity: 1;
-      filter: blur(0px);
     }
   }
 
