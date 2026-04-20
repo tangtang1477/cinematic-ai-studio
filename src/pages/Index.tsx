@@ -193,6 +193,8 @@ const Index = () => {
           poster="/videos/intro-poster.jpg"
           onLoadedData={() => setIntroReady(true)}
           onCanPlay={handleIntroCanPlay}
+          onPlaying={handleIntroPlaying}
+          onTimeUpdate={handleIntroTimeUpdate}
           onEnded={handleIntroEnded}
         />
         <video
