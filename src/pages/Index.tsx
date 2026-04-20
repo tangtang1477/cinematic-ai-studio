@@ -3,7 +3,7 @@ import AppSidebar from "@/components/AppSidebar";
 import HeroSection from "@/components/HeroSection";
 import CreationPanel from "@/components/CreationPanel";
 import TemplateCard from "@/components/TemplateCard";
-import FlippableCard from "@/components/FlippableCard";
+import FlyingCardsScene from "@/components/FlyingCardsScene";
 import { templates } from "@/data/templates";
 import type { AspectRatio } from "@/components/CreationPanel";
 
@@ -150,14 +150,9 @@ const Index = () => {
     }
   }, [loopActuallyPlaying, imagesReady, phase]);
 
-  const handleCardFlyEnd = useCallback((e: React.AnimationEvent) => {
-    if (e.animationName === "cardFlight") {
-      flyEndCount.current += 1;
-      if (flyEndCount.current >= templates.length) {
-        setCardsSettled(true);
-        setPhase("ready");
-      }
-    }
+  const handleAllSettled = useCallback(() => {
+    setCardsSettled(true);
+    setPhase("ready");
   }, []);
 
   const isIntro = phase === "intro";
@@ -305,77 +300,12 @@ const Index = () => {
         </div>
       </div>
 
-      {/* ========== FLYING CARDS LAYER ========== */}
+      {/* ========== FLYING CARDS LAYER (Framer Motion) ========== */}
       {cardsVisible && !cardsSettled && imagesReady && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 50,
-            pointerEvents: "none",
-          }}
-        >
-          {templates.map((t, i) => {
-            const ct = CARD_FINAL_TRANSFORMS[i];
-            const delay = i * 50;
-
-            // Same start Y for all 5 cards — just below the input panel top edge.
-            // Different start X — evenly spaced horizontally, centered on viewport.
-            const viewportCenterX = contentLeft + contentWidth / 2;
-            const startX = viewportCenterX + CARD_FLY_ORIGIN_OFFSETS_X[i];
-            const startY = 110;
-
-            const endX =
-              fanStartX +
-              i * (CARD_WIDTH + CARD_OVERLAP) +
-              CARD_WIDTH / 2 +
-              ct.tx;
-            const endY = cardsTopY + ct.ty;
-
-            // Center card pops forward; neighbors mid; outer back.
-            const zIndex = i === 2 ? 20 : i === 1 || i === 3 ? 10 : 5;
-
-            return (
-              <div
-                key={`fly-${t.id}`}
-                onAnimationEnd={handleCardFlyEnd}
-                style={{
-                  position: "absolute",
-                  width: `${CARD_WIDTH}px`,
-                  aspectRatio: "3 / 4",
-                  left: `${startX - CARD_WIDTH / 2}px`,
-                  top: `${startY}px`,
-                  zIndex,
-                  willChange: "transform, opacity, filter",
-                  perspective: "1100px",
-                  animation: `cardFlight 1.4s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both`,
-                  ["--fly-dx" as string]: `${endX - startX}px`,
-                  ["--fly-dy" as string]: `${endY - startY}px`,
-                }}
-              >
-                {/* Inner: FlippableCard handles 3D front/back */}
-                <div
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    transformStyle: "preserve-3d",
-                    animation: `cardFlip 1.4s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both`,
-                  }}
-                >
-                  <FlippableCard
-                    front={
-                      <TemplateCard
-                        template={t}
-                        onTry={handleTry}
-                        noOverlay
-                      />
-                    }
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <FlyingCardsScene
+          templates={templates}
+          onAllSettled={handleAllSettled}
+        />
       )}
     </div>
   );
