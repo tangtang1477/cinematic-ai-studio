@@ -21,10 +21,6 @@ const CARD_FINAL_TRANSFORMS = [
   { rotate: 12, tx: -36, ty: 18 },
 ];
 
-// Same start Y for all cards; different X positions evenly spaced
-// roughly across the width of the input panel (max-w-[720px] centered).
-const CARD_FLY_ORIGIN_OFFSETS_X = [-160, -80, 0, 80, 160];
-
 /**
  * Preload and fully decode all template images into browser cache.
  */
@@ -65,7 +61,7 @@ const Index = () => {
 
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
-  const flyEndCount = useRef(0);
+  
 
   const handleTry = useCallback((templatePrompt: string) => {
     setPrompt(templatePrompt);
