@@ -76,12 +76,20 @@ const Index = () => {
     preloadTemplateImages().then(() => setImagesReady(true));
   }, []);
 
+  // Only load intro video upfront — defer loop.mp4 until intro is ready to play,
+  // so they don't fight for bandwidth on cold cache (incognito).
   useEffect(() => {
-    const introVideo = introVideoRef.current;
-    const loopVideo = loopVideoRef.current;
+    introVideoRef.current?.load();
+  }, []);
 
-    introVideo?.load();
-    loopVideo?.load();
+  // Once intro can play smoothly, start preloading loop in the background.
+  const handleIntroCanPlay = useCallback(() => {
+    setIntroReady(true);
+    const loop = loopVideoRef.current;
+    if (loop && loop.preload !== "auto") {
+      loop.preload = "auto";
+      loop.load();
+    }
   }, []);
 
   // When intro ends → start loop video, enter "loop" phase
@@ -152,7 +160,7 @@ const Index = () => {
           preload="auto"
           poster="/videos/intro-poster.jpg"
           onLoadedData={() => setIntroReady(true)}
-          onCanPlay={() => setIntroReady(true)}
+          onCanPlay={handleIntroCanPlay}
           onEnded={handleIntroEnded}
         />
         <video
@@ -161,7 +169,7 @@ const Index = () => {
           className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
           style={{ opacity: !isIntro ? 1 : 0 }}
           muted
-          preload="auto"
+          preload="none"
           playsInline
           loop
           onPlaying={handleLoopPlaying}
