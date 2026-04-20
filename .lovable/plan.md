@@ -1,91 +1,69 @@
-## 参考动效（Aideo Studio AnnouncementModal flyOut）
 
-```
-transform: scale(1) translate(0,0)  →  scale(0.05) translate(dx,dy)
-opacity: 1 → 0
-transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1),
-            opacity   0.55s ease 0.15s
-```
 
-特点：单一 transform 链（translate + scale 在同一属性里）、平滑的 Material ease、opacity 比 transform 晚 0.15s 起步形成"先飞再淡"的层次。
+## 根本原因诊断
 
-## 反向移植到 5 张卡片飞出（current project）
+### 问题1：视频播放卡顿（intro 卡帧 + intro→loop 黑屏）
 
-将 `FlyingCardsScene.tsx` 的飞入动效改为严格按 Aideo Studio 镜像：
+`intro.mp4 = 5.7MB`、`loop.mp4 = 9.6MB`，**当前代码同时 `load()` 两个视频**（Index.tsx L82-87）。在无痕/冷缓存下，浏览器会平分带宽给这两个大文件，导致：
+- intro 缓冲不够，开播前长时间卡帧
+- intro 快结束时 loop 还没缓冲到 readyState ≥ 3，crossfade 失败，出现黑屏
 
-**起点（source）**：每张卡片从输入框顶部不同点出发：card1: x = -160, y = same startY，card2: x = -80, y = same startY，card3: x = 0, y = same startY，card4: x = 80, y = same startY，card5: x = 160, y = same startY
+### 问题2：卡片正面图片"一顿一顿地慢慢加载"
 
-- `transform: translate(0,0) scale(0.05)`
-- `opacity: 0`
-- `rotateY: 180deg`（背面朝前）
+**5 张 PNG 总计 15.3MB，每张 1276×1701 全分辨率**，但实际只显示 220×293（CSS）。
+- `preloadTemplateImages()` 用 `new Image() + decode()` 解码 → 但解码后的 bitmap 只挂在内存里的 detached `Image` 对象上，**浏览器并不会把它共享给后续 `<img>` 标签**
+- 当 `<TemplateCard>` 真正 mount 时，浏览器会再次为 DOM 中的 `<img>` 解码这 15MB（即使有缓存也要重新 decode 1276×1701 的位图），落位瞬间触发 5 次 GPU 纹理上传 → 一顿一顿出现
 
-**终点（target）**：扇形落位
+### 问题3：卡片背面"始终没加载出来"
 
-- `transform: translate(dx,dy) scale(1)`
-- `opacity: 1`
-- `rotateY: 0deg`（正面）
+`CardBack.tsx` 用 `decoding="sync"`（L8），背面在 `rotateY(180deg)` 状态下浏览器认为**不可见**（backface-visibility: hidden），有些浏览器会**完全跳过解码**直到它真正面向用户。同时 cardBack 是 269K JPEG 在 Vite dev 下每次 hot reload 重新请求。
 
-**transition（镜像 Aideo + 拉长到 2.4s + 加翻转）**
+## 修复方案（不动任何 UI/动效逻辑）
 
-```
-transform:  2.4s cubic-bezier(0.4, 0, 0.2, 1)
-opacity:    1.6s ease 0.2s         ← 比 transform 晚起步，先飞再显
-rotateY:    1.4s cubic-bezier(0.4, 0, 0.2, 1) 0.6s
-            ↑ 0.6s 后开始翻，到 2.0s 翻转完成
-            前 25% 时间纯背面飞行 → 中段同步翻转 → 末段定格正面
-```
+### 1. 视频加载策略 — 串行而非并行
+`src/pages/Index.tsx`：
+- **删除** L82-87 同时 load 两个视频的逻辑
+- intro 立即 load（保留 `preload="auto"`）
+- loop **不在 mount 时 load**，在 intro 触发 `onPlaying` 时才 `loop.preload="auto"; loop.load()` —— 此时 intro 已经在播，带宽专给 loop
+- loop video 标签初始 `preload="metadata"` 而非默认 auto
 
-**翻转节奏（关键）**
+### 2. 模板图片 — 用 `?w=440&format=webp` Vite 内置 import 参数压缩
 
-- 0 → 0.6s：背面 + 极小，"从输入框生出"，纯位移+放大，背面清晰可见
-- 0.6 → 2.0s：边飞、边放大、边翻转
-- 2.0 → 2.4s：正面定格，轻微 ease-out 收尾
+Vite 不内置 imagetools，但 PNG 1276×1701 实际只显示 220×293（@2x = 440×586），**改成手动预压缩**：
+- 用脚本一次性生成 `template-XX-440.webp`（440px 宽，~30-50KB/张）
+- 替换 `src/data/templates.ts` import 为新的 webp 文件
+- 总大小从 15MB → ~250KB，解码时间从 ~200ms/张 → ~10ms/张
 
-**stagger**：50ms（5 张总跨度 200ms，保持"一组"感）
+### 3. CardBack 解码 — `decoding="async"` + 提前预热
 
-## 改动方案
+- `src/components/CardBack.tsx` `decoding="sync"` → `decoding="async"`
+- 把 `card-back.jpg` 也压成 ~440px webp（~40KB）
+- `preloadTemplateImages()` 里同时预热 cardBack（确保它在飞入开始时已 decoded 并挂在 DOM `<link rel="preload">` / `<img hidden>` 上）
 
-抛弃当前 Framer Motion 多层 motion 实现，改用 Aideo Studio 同款**单层 CSS transition**：
+### 4. 在 Index 里增加隐藏 `<img>` 预热层
 
-### `src/components/FlyingCardsScene.tsx` 重写
-
-结构保留 3 层（wrapper / 3d-stage / inner + front/back），但动画机制改成：
-
-1. 组件 mount 时所有卡片初始 style = source state（scale 0.05, opacity 0, rotateY 180）
-2. `requestAnimationFrame` 后切到 target state，触发 CSS transition
-3. transition-delay 实现 stagger（`${i * 0.05}s`）
-4. 监听最长的 transform transitionend 触发 `onAllSettled`
-
-去除：framer-motion 依赖（保留也行，但本次不再使用）、glow trail（与 Aideo 风格不符，纯净飞出）、多 motion.div
-
-保留：
-
-- 落定火花粒子（`LandingSparkle`，落位时刻触发）
-- per-card perspective 1200px
-- backface-visibility 双面
-- 3:4 卡片比例
-
-### `src/pages/Index.tsx`
-
-- 触发延迟保留 250ms
-- `onAllSettled` 回调保留
+在 `<div className="fixed inset-0 z-0">` 里追加一个 `display:none` 的容器，里面放 5 个 `<img src={template.image} />` + 1 个 `<img src={cardBack} />`，让浏览器**真正在 DOM 中**保留 decoded bitmap，飞入时直接命中纹理缓存，杜绝"一顿一顿"。
 
 ### 不动
-
-视频逻辑、TemplateCard、CardBack、扇形落定布局、CreationPanel、HeroSection
+- 所有动效逻辑（FlyingCardsScene 不改一行）
+- 视频元素 JSX 结构、phase 状态机、卡片落定布局
+- TemplateCard 内部、CreationPanel、HeroSection、AppSidebar
+- CardBack 的样式和结构（只改 decoding 属性 + 图片源）
 
 ## 涉及文件
 
+| 文件 | 改动 |
+|---|---|
+| `src/assets/template-XX.png` ×5 + `card-back.jpg` | 用脚本一次性压成 440px 宽 webp（~30-50KB/张），生成新文件 `template-XX-sm.webp`、`card-back-sm.webp` |
+| `src/data/templates.ts` | import 路径换成新的 webp 文件 |
+| `src/components/CardBack.tsx` | import 换成 webp；`decoding="sync"` → `decoding="async"` |
+| `src/pages/Index.tsx` | 删除并行 load 两视频；改为 intro 优先 → onPlaying 时再 load loop；增加隐藏图片预热层 |
 
-| 文件                                    | 改动                                                                                                          |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `src/components/FlyingCardsScene.tsx` | 改用单层 CSS transition（Aideo 同款 cubic-bezier(0.4,0,0.2,1)），duration 2.4s，opacity 延迟起步，rotateY 在 0.6s~2.0s 完成翻转 |
+## 验收（无痕浏览器）
 
+1. intro 视频几乎立刻开播，无长时间卡帧
+2. intro → loop 平滑切换，无黑屏
+3. 卡片飞入时背面（蓝色卡背）清晰可见
+4. 落位瞬间 5 张正面同时显示，**无逐张加载、无停顿**
+5. 整个页面首屏资源从 ~25MB 降到 ~6MB
 
-## 验收（无痕）
-
-1. 5 张卡片从输入框中央同一点出发（scale 0.05, 不可见, 背面）
-2. 前 0.6s：纯放大 + 飞出 + 渐显，背面清晰可见
-3. 0.6~2.0s：边飞边翻边放大
-4. 2.0~2.4s：正面定格，落位火花
-5. 整体 2.4s，节奏与 Aideo Studio 弹窗缩小飞入完全镜像，丝滑高级
