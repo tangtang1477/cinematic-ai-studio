@@ -1,137 +1,76 @@
 
-## 分析
+## 诊断（无痕实测 + 代码分析）
 
-代码里飞入逻辑是有的，但你反复看不到——核心原因是当前用 CSS keyframe + `onAnimationEnd` 监听 `animationName === "cardFlight"` 触发落定，这套方案在以下情况下会"看起来像直接出现"：
+### 问题1：看不到飞入和翻转（核心bug）
 
-1. **动画在你看到之前就完成了**：`loopActuallyPlaying && imagesReady` 的 gate 是页面初始化阶段触发的，等你回头看，动画已经跑完，5 张卡早就 settled，看到的就是静止扇形。
-2. **CSS keyframe 在某些渲染时机会被浏览器跳过 0% 状态**（即使有 `animation-fill-mode: both`，在初次 mount + 同帧 set state 的极端情况下会出现"flash to final"）。
-3. **没有视觉反馈**没拖尾、没光晕、没火花，1.4s 极快的翻转 + 飞入很容易被你当成"瞬间出现"。
+session replay 显示动画**确实在跑**（连续 transform 更新 + 火花粒子生成），但你视觉上"看不到"。三个根本原因：
 
-要彻底解决，必须换一套**可靠、可视、可重放**的方案。
+**A. 3D 上下文被破坏 → 翻转看不到背面**
+`card-front` 上加了 `transform: rotate(${l.rotate}deg)`（2D rotate），这会**强制 flatten** 父级的 `preserve-3d`，导致 `backface-visibility: hidden` 行为异常。同时 Framer Motion 在外层 wrapper 上把 `x/y/scale` 合成成一个 matrix transform，与 `transformStyle: preserve-3d` 配合时会把 3D 子节点也压平，rotateY 看起来像左右拉伸而不是真正翻转。
 
-## 改动方案（用 Framer Motion 重做）
+**B. 触发时机太早，用户看不到第一帧**
+`loopActuallyPlaying` 在 loop 视频 `playing` 事件触发瞬间就 setState，而那一刻视频可能还在和 intro crossfade（500ms transition），用户的视线焦点还在 intro。1.4s 后回头看，动画已结束。
 
-### 1. 引入 Framer Motion（项目已有 React，可直接装）
+**C. 起点 X 计算错误**
+`startX = viewportCenterX + START_X_OFFSETS[i] - CARD_WIDTH/2`
+但 `viewportCenterX = SIDEBAR_WIDTH + contentWidth/2`。问题：起点 Y=110 是从视口顶部算的，但 5 张卡片的 startX 实际散布在 `[centerX-280, centerX+60]` 范围内（CARD_WIDTH=220），离"输入框上方一排"的视觉印象有偏差。其实输入框宽度 ~700px，`±160px` 偏移已经接近输入框边缘，看起来正常 —— **但因为 A+B 看不到任何过程，等于没飞**。
 
-`framer-motion` 比手写 keyframe 可靠得多，状态机明确，不会出现"跳过初始帧"问题。
+### 问题2：卡片图片加载卡顿
 
-### 2. 新建 `src/components/FlyingCardsScene.tsx`
+虽然 `preloadTemplateImages()` 用 `img.decode()` 并 await，但：
+- `TemplateCard` 里 `<img decoding="sync" loading="eager">` —— **sync decoding 会阻塞主线程**，正好在卡片落定瞬间触发，造成 60-200ms 卡顿
+- 5 张图同时首次进入合成层（GPU 上传纹理），在背面翻到正面那一刻才被浏览器认为"需要可见"，触发 GPU upload spike
 
-完整组件，包含 5 张卡片的飞入 + 翻转 + 拖尾 + 落地火花。
+## 改动方案
 
-**结构（严格按你要求的 cards-scene 层级）**：
+### 1. `src/components/FlyingCardsScene.tsx` — 修真 3D + 真位移
+
+**结构调整**（新增一层 transform 隔离）：
 ```
-<motion.div className="cards-scene">  {perspective: 1400px}
-  {templates.map((t, i) => (
-    <motion.div className="card-wrapper"            // 控制位移、缩放、透明度、blur
-      initial={{ x: startX[i], y: startY, scale: 0.4, opacity: 0, filter: "blur(6px)" }}
-      animate={{ x: endX[i],   y: endY,   scale: 1,   opacity: 1, filter: "blur(0)" }}
-      transition={{
-        duration: 1.4,
-        delay: i * 0.06,       // 60ms stagger
-        ease: [0.22, 1, 0.36, 1],   // 高级 ease-out
-      }}
-      onAnimationComplete={() => triggerSparkle(i)}
-    >
-      <motion.div className="card-inner"            // 控制 3D 翻转
-        style={{ transformStyle: "preserve-3d" }}
-        initial={{ rotateY: 180 }}
-        animate={{ rotateY: 0 }}
-        transition={{
-          duration: 1.4,
-          delay: i * 0.06 + 0.35,   // 关键：背面停留 0.35s 再翻
-          ease: [0.22, 1, 0.36, 1],
-        }}
-      >
-        <div className="card-front" style={{ backfaceVisibility: "hidden" }}>
-          <TemplateCard ... noOverlay />
-        </div>
-        <div className="card-back" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
-          <CardBack />
-        </div>
-      </motion.div>
-
-      {/* 拖尾光晕 — 跟随卡片，淡出 */}
-      <motion.div className="glow-trail"
-        initial={{ opacity: 0.8, scale: 0.4 }}
-        animate={{ opacity: 0, scale: 1.2 }}
-        transition={{ duration: 1.4, delay: i * 0.06, ease: "easeOut" }}
-        style={{
-          position: "absolute", inset: -30,
-          background: "radial-gradient(circle, rgba(113,240,246,0.55) 0%, rgba(113,240,246,0) 70%)",
-          filter: "blur(12px)",
-          pointerEvents: "none",
-          zIndex: -1,
-        }}
-      />
-    </motion.div>
-  ))}
-
-  {/* 落地火花 — 每张卡 onAnimationComplete 时在终点位置放 6-8 个粒子 */}
-  <Sparkles ... />
-</motion.div>
+card-wrapper (motion)         ← x, y, opacity, filter（纯 2D 位移）
+  card-3d-stage               ← perspective: 1200px（每张卡独立 perspective）
+    card-inner (motion)       ← rotateY + scale（真 3D）
+      card-front              ← NO 2D rotate；rotate 移到 wrapper 上
+      card-back               ← rotateY(180deg)
 ```
 
-**关键参数**：
-- 起始 `x`：`-160, -80, 0, 80, 160`（同 Y、不同 X，从输入框顶部水平排开）
-- 起始 `y`：输入框顶部 = `~110px`
-- 终点 `x/y`：根据 `CARD_FINAL_TRANSFORMS` + 视口居中计算
-- 总时长：1.4s
-- stagger：60ms
-- 翻转 delay：350ms（让背面在前 25% 时间内清晰可见，无任何"一闪而过"风险）
-- ease：`cubic-bezier(0.22, 1, 0.36, 1)`（apple-like ease-out）
-- `perspective`：1400px（更柔和的透视）
-- 中间卡片 `zIndex: 20`，邻居 10，外侧 5
+关键改动：
+- **把 `rotate(${l.rotate}deg)` 从 card-front 移除**，放到外层 wrapper 的 `rotate` motion prop（与 x/y/scale 一起，Framer Motion 会合并成一个 2D 矩阵，不影响内层 3D）
+- **每张卡自己一层 perspective**（`perspective: 1200px` on `card-3d-stage`），而不是共享 scene 的 perspective —— 避免不同位置卡片透视差异导致翻转视觉怪异
+- **scale 放到 inner**（和 rotateY 一起），不再放到 wrapper，避免 scale 干扰 3D 矩阵
+- **wrapper 仅做 `x/y/opacity/filter/rotate(2D)`**，纯平面变换
+- 起点 scale 改为 `0.3`（更明显"从无到有"）
+- duration 提高到 `1.6s`，FLIP_HOLD `0.45s`（背面停留更明显）
+- stagger 保持 `0.06s`
 
-### 3. 拖尾光晕（cyan glow trail）
+### 2. `src/components/TemplateCard.tsx` — 修图片卡顿
 
-每张卡片 wrapper 内部放一个 `radial-gradient` 圆形光晕，初始 opacity 0.8、scale 0.4，1.4s 内同步扩散到 scale 1.2、opacity 0，配合卡片移动产生"拖尾"视觉。
+- 改 `decoding="sync"` → `decoding="async"`
+- 不变 `loading="eager"`
 
-### 4. 落地火花（sparkle particles）
+### 3. `src/pages/Index.tsx` — 修触发时机
 
-新建子组件 `<LandingSparkle x y delay />`：在卡片 `onAnimationComplete` 时挂载，绘制 8 个小粒子（white + cyan 混合），用 framer-motion `animate` 从中心向外辐射，每个粒子 random 角度 + 60-90px 距离，duration 0.5s opacity 1→0，scale 0.5→0。卸载时移除。
+- 飞入触发前，**额外延迟 250ms**（确保 loop 视频已经 fade-in 完成、用户视线已经稳定在画面上才开始飞）
+- 或更稳妥：触发条件改为 `loopActuallyPlaying && imagesReady && loopVideo.currentTime > 0.3`（loop 真正进入稳定播放）—— 用 250ms `setTimeout` 实现即可
+- 飞入开始的瞬间额外打一个 console.log 让你能在 devtools 验证
 
-### 5. `src/pages/Index.tsx` 改动
+### 4. 火花粒子修复
+当前 `setSparkles` 用 `Date.now()+i` 作为 id，700ms 后再用 `Date.now()+i` 过滤，但 700ms 后 `Date.now()` 已变 → 永远过滤不掉，sparkles 数组无限增长。改用 `useRef counter` 生成稳定 id。
 
-- 删除现有的 fly layer JSX（lines 308-379）
-- 删除 `handleCardFlyEnd` 和 `flyEndCount`
-- 替换为：
-  ```tsx
-  {cardsVisible && !cardsSettled && imagesReady && (
-    <FlyingCardsScene
-      templates={templates}
-      onAllSettled={() => { setCardsSettled(true); setPhase("ready"); }}
-    />
-  )}
-  ```
-- 触发 gate 不变（`loopActuallyPlaying && imagesReady`）
-
-### 6. `src/index.css`
-
-- 删除 `cardFlight` 和 `cardFlip` keyframe（不再需要）
-- 保留其他动画
-
-### 7. 不动
-
-- 视频加载逻辑、imagesReady 门控、视频元素
-- CreationPanel、TemplateCard、CardBack、AppSidebar、HeroSection
-- 落定后的扇形展示 (`CARD_FINAL_TRANSFORMS`)
-- 玻璃材质、颜色、布局
+### 5. 不动
+视频加载逻辑、CardBack、CreationPanel、HeroSection、扇形落定布局
 
 ## 涉及文件
 
 | 文件 | 改动 |
 |---|---|
-| `package.json` | 加 `framer-motion` 依赖 |
-| `src/components/FlyingCardsScene.tsx` | 新建：5 张双面卡片 + 拖尾 + 火花的完整动效 |
-| `src/components/LandingSparkle.tsx` | 新建：单个落地火花粒子组件 |
-| `src/pages/Index.tsx` | 替换 fly layer 为 `<FlyingCardsScene>` |
-| `src/index.css` | 删除旧 `cardFlight` / `cardFlip` keyframe |
+| `src/components/FlyingCardsScene.tsx` | 重构 3D 结构（per-card perspective、scale 移到 inner、final rotate 移到 wrapper），延长 duration/FLIP_HOLD，修 sparkle id 泄漏 |
+| `src/components/TemplateCard.tsx` | `decoding="sync"` → `async` |
+| `src/pages/Index.tsx` | 飞入触发额外 +250ms 延迟，确保用户能看到第一帧 |
 
 ## 验收（无痕浏览器）
 
-1. 视频2开播后，5 张卡片**清晰可见地**从输入框顶部同一水平线、5 个不同 X 同时弹出（带 60ms 微 stagger）
-2. 卡片伴随 cyan 拖尾光晕飞向目标，前 0.35s 明显看到蓝色扑克牌背面
-3. 中段同步：边飞、边翻、边放大，3D 透视感强
-4. 落定瞬间每张卡触发火花粒子辐射效果
-5. 最终 5 张正面朝前，扇形排布，干净稳定
+1. 视频2 fade-in 完成后，**明显看到** 5 张卡片从输入框上方一排同时出现（小、半透、blur、背面朝前）
+2. 前 0.45s 清晰可见蓝色扑克牌背面
+3. 中段 5 张同步飞向扇形位置，边飞边翻边放大，**真实 3D 透视感**（翻转过程中能看到 rotateY 的"立体感"，不是左右拉伸）
+4. 落定瞬间无图片加载卡顿，火花粒子辐射后扇形稳定
