@@ -26,7 +26,7 @@ const TemplateCard = ({ template, onTry, noOverlay = false }: TemplateCardProps)
         alt={template.title}
         className="absolute inset-0 w-full h-full object-cover"
         loading="eager"
-        decoding="sync"
+        decoding="async"
       />
 
       {!noOverlay && (
