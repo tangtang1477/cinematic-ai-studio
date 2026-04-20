@@ -54,6 +54,69 @@ const tabs: { value: CreationMode; label: string }[] = [
   { value: "audiobook", label: "Audiobooks" },
 ];
 
+const Tabs = ({
+  activeMode,
+  onModeChange,
+}: {
+  activeMode: CreationMode;
+  onModeChange: (val: CreationMode) => void;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const btnRefs = useRef<Record<CreationMode, HTMLButtonElement | null>>({
+    story: null,
+    audiobook: null,
+  });
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    const btn = btnRefs.current[activeMode];
+    const container = containerRef.current;
+    if (!btn || !container) return;
+    const btnRect = btn.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    setIndicator({
+      left: btnRect.left - containerRect.left,
+      width: btnRect.width,
+    });
+  }, [activeMode]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative px-5 pt-3 flex items-center gap-5 border-b border-white/5"
+    >
+      {tabs.map((t) => {
+        const active = activeMode === t.value;
+        return (
+          <button
+            key={t.value}
+            ref={(el) => (btnRefs.current[t.value] = el)}
+            onClick={() => onModeChange(t.value)}
+            className="relative pb-2 text-[13px] font-medium transition-colors"
+            style={{
+              color: active ? "hsl(var(--foreground))" : "hsla(0,0%,100%,0.4)",
+            }}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+      <span
+        aria-hidden="true"
+        className="absolute -bottom-px h-[2px] rounded-full pointer-events-none"
+        style={{
+          background: "hsl(var(--primary))",
+          left: 0,
+          width: `${indicator.width}px`,
+          transform: `translateX(${indicator.left}px)`,
+          transition:
+            "transform 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s cubic-bezier(0.4,0,0.2,1)",
+        }}
+      />
+    </div>
+  );
+};
+
 const RatioIcon = ({ w, h, size = 14 }: { w: number; h: number; size?: number }) => {
   const maxDim = size;
   const scale = maxDim / Math.max(w, h);
