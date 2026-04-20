@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import type { Template } from "@/data/templates";
 import TemplateCard from "./TemplateCard";
 import CardBack from "./CardBack";
@@ -25,10 +24,15 @@ const CARD_FINAL_TRANSFORMS = [
 
 const START_X_OFFSETS = [-160, -80, 0, 80, 160];
 const START_Y = 110;
-const DURATION = 1.6;
-const STAGGER = 0.06;
-const FLIP_HOLD = 0.45;
-const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+// Aideo Studio mirrored timing
+const TRANSFORM_DURATION = 2.4; // s — wrapper translate + inner scale
+const OPACITY_DURATION = 1.6;   // s
+const OPACITY_DELAY = 0.2;      // s — opacity starts later → "fly first, reveal after"
+const FLIP_DURATION = 1.4;      // s
+const FLIP_DELAY = 0.6;         // s — back visible for first 0.6s
+const STAGGER = 0.05;           // s
+const EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
 
 interface SparkleEvent {
   id: number;
@@ -38,8 +42,9 @@ interface SparkleEvent {
 
 const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) => {
   const [sparkles, setSparkles] = useState<SparkleEvent[]>([]);
-  const [settledCount, setSettledCount] = useState(0);
+  const [animateIn, setAnimateIn] = useState(false);
   const sparkleIdRef = useRef(0);
+  const settledCountRef = useRef(0);
 
   const layout = useMemo(() => {
     const vw = typeof window !== "undefined" ? window.innerWidth : 1400;
@@ -71,29 +76,38 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
     });
   }, [templates]);
 
+  // Mount with source state, then on next frame switch to target → CSS transitions fire
   useEffect(() => {
-    if (settledCount >= templates.length) {
-      const t = setTimeout(() => onAllSettled(), 250);
-      return () => clearTimeout(t);
-    }
-  }, [settledCount, templates.length, onAllSettled]);
-
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log("[FlyingCardsScene] mounted — animation starting");
+    // double rAF for guaranteed paint of initial state before transition
+    const r1 = requestAnimationFrame(() => {
+      const r2 = requestAnimationFrame(() => {
+        // eslint-disable-next-line no-console
+        console.log("[FlyingCardsScene] triggering CSS fly-out (Aideo mirror, 2.4s)");
+        setAnimateIn(true);
+      });
+      return () => cancelAnimationFrame(r2);
+    });
+    return () => cancelAnimationFrame(r1);
   }, []);
 
-  const handleCardComplete = (i: number) => {
+  const handleWrapperTransitionEnd = (i: number, e: React.TransitionEvent<HTMLDivElement>) => {
+    // Only react to the wrapper's transform transition (longest one)
+    if (e.propertyName !== "transform") return;
+    if (e.currentTarget !== e.target) return;
+
     const l = layout[i];
     const x = l.endX + CARD_WIDTH / 2;
     const y = l.endY + (CARD_WIDTH * 4) / 3 / 2;
     const id = ++sparkleIdRef.current;
     setSparkles((prev) => [...prev, { id, x, y }]);
-    setSettledCount((c) => c + 1);
-
     setTimeout(() => {
       setSparkles((prev) => prev.filter((s) => s.id !== id));
     }, 700);
+
+    settledCountRef.current += 1;
+    if (settledCountRef.current >= templates.length) {
+      setTimeout(() => onAllSettled(), 200);
+    }
   };
 
   return (
@@ -109,32 +123,22 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
       {templates.map((t, i) => {
         const l = layout[i];
         const delay = i * STAGGER;
+
+        // Wrapper translates from start → end
+        const wrapperTransform = animateIn
+          ? `translate3d(${l.endX}px, ${l.endY}px, 0) rotate(${l.rotate}deg)`
+          : `translate3d(${l.startX}px, ${l.startY}px, 0) rotate(0deg)`;
+
+        // Inner scales + flips
+        const innerTransform = animateIn
+          ? `scale(1) rotateY(0deg)`
+          : `scale(0.05) rotateY(180deg)`;
+
         return (
-          <motion.div
+          <div
             key={`fly-${t.id}`}
             className="card-wrapper"
-            initial={{
-              x: l.startX,
-              y: l.startY,
-              rotate: 0,
-              opacity: 0,
-              filter: "blur(6px)",
-            }}
-            animate={{
-              x: l.endX,
-              y: l.endY,
-              rotate: l.rotate,
-              opacity: 1,
-              filter: "blur(0px)",
-            }}
-            transition={{
-              duration: DURATION,
-              delay,
-              ease: EASE,
-              opacity: { duration: 0.5, delay, ease: "easeOut" },
-              filter: { duration: 0.7, delay, ease: "easeOut" },
-            }}
-            onAnimationComplete={() => handleCardComplete(i)}
+            onTransitionEnd={(e) => handleWrapperTransitionEnd(i, e)}
             style={{
               position: "absolute",
               top: 0,
@@ -142,31 +146,16 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
               width: CARD_WIDTH,
               aspectRatio: "3 / 4",
               zIndex: l.zIndex,
-              willChange: "transform, opacity, filter",
+              transform: wrapperTransform,
+              opacity: animateIn ? 1 : 0,
+              willChange: "transform, opacity",
+              transition: [
+                `transform ${TRANSFORM_DURATION}s ${EASE} ${delay}s`,
+                `opacity ${OPACITY_DURATION}s ease ${delay + OPACITY_DELAY}s`,
+              ].join(", "),
             }}
           >
-            {/* Cyan glow trail */}
-            <motion.div
-              className="glow-trail"
-              initial={{ opacity: 0.85, scale: 0.4 }}
-              animate={{ opacity: 0, scale: 1.3 }}
-              transition={{
-                duration: DURATION,
-                delay,
-                ease: "easeOut",
-              }}
-              style={{
-                position: "absolute",
-                inset: -40,
-                background:
-                  "radial-gradient(circle, rgba(113,240,246,0.6) 0%, rgba(113,240,246,0.18) 40%, rgba(113,240,246,0) 70%)",
-                filter: "blur(14px)",
-                pointerEvents: "none",
-                zIndex: -1,
-              }}
-            />
-
-            {/* Per-card 3D stage — isolates perspective from outer 2D matrix */}
+            {/* Per-card 3D stage */}
             <div
               className="card-3d-stage"
               style={{
@@ -177,68 +166,75 @@ const FlyingCardsScene = ({ templates, onAllSettled }: FlyingCardsSceneProps) =>
                 transformStyle: "preserve-3d",
               }}
             >
-              {/* Inner — handles rotateY + scale (true 3D) */}
-              <motion.div
+              {/* Inner — scale + rotateY */}
+              <div
                 className="card-inner"
-                initial={{ rotateY: 180, scale: 0.3 }}
-                animate={{ rotateY: 0, scale: 1 }}
-                transition={{
-                  rotateY: {
-                    duration: DURATION - FLIP_HOLD,
-                    delay: delay + FLIP_HOLD,
-                    ease: EASE,
-                  },
-                  scale: {
-                    duration: DURATION,
-                    delay,
-                    ease: EASE,
-                  },
-                }}
                 style={{
                   position: "relative",
                   width: "100%",
                   height: "100%",
                   transformStyle: "preserve-3d",
                   willChange: "transform",
+                  transform: innerTransform,
+                  transition: [
+                    `transform ${TRANSFORM_DURATION}s ${EASE} ${delay}s`,
+                    // override rotateY-portion with its own delayed timing via second transform? Not possible —
+                    // so we keep one combined transform on inner. To get the "back visible 0.6s" effect,
+                    // we instead split: scale stays on inner, rotateY moves to its own child.
+                  ].join(", "),
                 }}
               >
-                {/* Front */}
+                {/* Flip layer — only handles rotateY with delayed start */}
                 <div
-                  className="card-front"
+                  className="card-flip"
                   style={{
-                    position: "absolute",
-                    inset: 0,
-                    backfaceVisibility: "hidden",
-                    WebkitBackfaceVisibility: "hidden",
-                    borderRadius: 12,
-                    overflow: "hidden",
-                    boxShadow:
-                      "0 20px 50px -12px rgba(0,0,0,0.55), 0 0 24px rgba(113,240,246,0.15)",
+                    position: "relative",
+                    width: "100%",
+                    height: "100%",
+                    transformStyle: "preserve-3d",
+                    willChange: "transform",
+                    transform: animateIn ? "rotateY(0deg)" : "rotateY(180deg)",
+                    transition: `transform ${FLIP_DURATION}s ${EASE} ${delay + FLIP_DELAY}s`,
                   }}
                 >
-                  <TemplateCard template={t} onTry={() => {}} noOverlay />
-                </div>
+                  {/* Front */}
+                  <div
+                    className="card-front"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backfaceVisibility: "hidden",
+                      WebkitBackfaceVisibility: "hidden",
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      boxShadow:
+                        "0 20px 50px -12px rgba(0,0,0,0.55), 0 0 24px rgba(113,240,246,0.15)",
+                    }}
+                  >
+                    <TemplateCard template={t} onTry={() => {}} noOverlay />
+                  </div>
 
-                {/* Back */}
-                <div
-                  className="card-back"
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    backfaceVisibility: "hidden",
-                    WebkitBackfaceVisibility: "hidden",
-                    transform: "rotateY(180deg)",
-                    borderRadius: 12,
-                    overflow: "hidden",
-                    boxShadow:
-                      "0 20px 50px -12px rgba(0,0,0,0.55), 0 0 24px rgba(113,240,246,0.25)",
-                  }}
-                >
-                  <CardBack />
+                  {/* Back */}
+                  <div
+                    className="card-back"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backfaceVisibility: "hidden",
+                      WebkitBackfaceVisibility: "hidden",
+                      transform: "rotateY(180deg)",
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      boxShadow:
+                        "0 20px 50px -12px rgba(0,0,0,0.55), 0 0 24px rgba(113,240,246,0.25)",
+                    }}
+                  >
+                    <CardBack />
+                  </div>
                 </div>
-              </motion.div>
+              </div>
             </div>
-          </motion.div>
+          </div>
         );
       })}
 
