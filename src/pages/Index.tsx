@@ -197,11 +197,29 @@ const Index = () => {
           className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
           style={{ opacity: !isIntro ? 1 : 0 }}
           muted
-          preload="auto"
+          preload="metadata"
           playsInline
           loop
           onPlaying={handleLoopPlaying}
         />
+        {/* Hidden preload layer — keeps decoded bitmaps in the live DOM so
+            the flying cards hit the texture cache instantly on landing. */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            overflow: "hidden",
+            opacity: 0,
+            pointerEvents: "none",
+          }}
+        >
+          {templates.map((t) => (
+            <img key={t.id} src={t.image} alt="" decoding="async" loading="eager" />
+          ))}
+          <img src={cardBackImg} alt="" decoding="async" loading="eager" />
+        </div>
       </div>
 
       <AppSidebar />
