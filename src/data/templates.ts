@@ -3,6 +3,11 @@ import template05 from "@/assets/template-05-sm.webp";
 import template08 from "@/assets/template-08-sm.webp";
 import template12 from "@/assets/template-12-sm.webp";
 import template03 from "@/assets/template-03-sm.webp";
+import template01 from "@/assets/template-01-sm.webp";
+import template02 from "@/assets/template-02-sm.webp";
+import template04 from "@/assets/template-04-sm.webp";
+import template07 from "@/assets/template-07-sm.webp";
+import template10 from "@/assets/template-10-sm.webp";
 
 export interface Template {
   id: string;
@@ -66,4 +71,16 @@ export const templates: Template[] = [
     gradient: "",
     image: template03,
   },
+];
+
+/**
+ * Alternate image set used when the user switches the creation mode tab
+ * (Audiobooks). Same 5 templates, different cover artwork.
+ */
+export const templateImagesAlt: string[] = [
+  template01,
+  template02,
+  template04,
+  template07,
+  template10,
 ];

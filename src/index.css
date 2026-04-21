@@ -149,4 +149,25 @@
     animation: float-orb 10s ease-in-out 4s infinite;
   }
 
+  @keyframes card-swap {
+    0% {
+      opacity: 0;
+      transform: translateY(8px) scale(0.94);
+      filter: blur(6px);
+    }
+    60% {
+      opacity: 1;
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  .card-swap-anim {
+    animation: card-swap 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
 }
