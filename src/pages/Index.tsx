@@ -313,6 +313,9 @@ const Index = () => {
                       const baseTransform = `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg)`;
                       const selectedTransform = `translate3d(${ct.tx}px, ${ct.ty - 20}px, 0) rotate(0deg) scale(1.05)`;
                       const dimmedTransform = `translate3d(${ct.tx}px, ${ct.ty}px, 0) rotate(${ct.rotate}deg) scale(0.96)`;
+                      const displayImage =
+                        mode === "audiobook" ? templateImagesAlt[i] : t.image;
+                      const displayTemplate = { ...t, image: displayImage };
                       return (
                         <div
                           key={t.id}
@@ -337,7 +340,18 @@ const Index = () => {
                           }}
                           className="hover:!-translate-y-5 hover:!rotate-0 hover:!z-20"
                         >
-                          <TemplateCard template={t} onTry={handleTryWithSelect(t.id)} />
+                          <div
+                            key={`${t.id}-${imageSwapKey}`}
+                            className="card-swap-anim"
+                            style={{
+                              animationDelay: `${i * 60}ms`,
+                            }}
+                          >
+                            <TemplateCard
+                              template={displayTemplate}
+                              onTry={handleTryWithSelect(t.id)}
+                            />
+                          </div>
                         </div>
                       );
                     })}
