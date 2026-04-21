@@ -4,7 +4,7 @@ import HeroSection from "@/components/HeroSection";
 import CreationPanel from "@/components/CreationPanel";
 import TemplateCard from "@/components/TemplateCard";
 import FlyingCardsScene from "@/components/FlyingCardsScene";
-import { templates } from "@/data/templates";
+import { templates, getTemplatesByMode } from "@/data/templates";
 import type { AspectRatio } from "@/components/CreationPanel";
 import cardBackImg from "@/assets/card-back-sm.webp";
 
@@ -60,6 +60,9 @@ const Index = () => {
   const [introReady, setIntroReady] = useState(false);
   const [loopActuallyPlaying, setLoopActuallyPlaying] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const prevModeRef = useRef(mode);
 
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const loopVideoRef = useRef<HTMLVideoElement>(null);
@@ -78,6 +81,22 @@ const Index = () => {
     },
     [handleTry]
   );
+
+  // Active templates for the current mode (used by landed cards + preload layer)
+  const activeTemplates = getTemplatesByMode(mode);
+
+  // When mode changes (after first render), trigger the refresh transition.
+  useEffect(() => {
+    if (prevModeRef.current === mode) return;
+    prevModeRef.current = mode;
+    setSelectedId(null);
+    setIsRefreshing(true);
+    const swap = setTimeout(() => {
+      setRefreshKey((k) => k + 1);
+      setIsRefreshing(false);
+    }, 250);
+    return () => clearTimeout(swap);
+  }, [mode]);
 
   // Preload images on mount
   useEffect(() => {
