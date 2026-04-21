@@ -246,6 +246,9 @@ const Index = () => {
           {templates.map((t) => (
             <img key={t.id} src={t.image} alt="" decoding="async" loading="eager" />
           ))}
+          {getTemplatesByMode("audiobook").map((t) => (
+            <img key={t.id} src={t.image} alt="" decoding="async" loading="eager" />
+          ))}
           <img src={cardBackImg} alt="" decoding="async" loading="eager" />
         </div>
       </div>
