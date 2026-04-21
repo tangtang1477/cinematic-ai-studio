@@ -3,6 +3,11 @@ import template05 from "@/assets/template-05-sm.webp";
 import template08 from "@/assets/template-08-sm.webp";
 import template12 from "@/assets/template-12-sm.webp";
 import template03 from "@/assets/template-03-sm.webp";
+import template01 from "@/assets/template-01-sm.webp";
+import template02 from "@/assets/template-02-sm.webp";
+import template04 from "@/assets/template-04-sm.webp";
+import template06 from "@/assets/template-06-sm.webp";
+import template09 from "@/assets/template-09-sm.webp";
 
 export interface Template {
   id: string;
@@ -67,3 +72,60 @@ export const templates: Template[] = [
     image: template03,
   },
 ];
+
+export const templatesAudiobook: Template[] = [
+  {
+    id: "a1",
+    title: "Midnight Tales",
+    description: "Whispered late-night stories with intimate narration. Velvet voices guide listeners through atmospheric soundscapes designed for relaxation and gentle escape.",
+    prompt: "Intimate late-night audiobook narration with whispered velvet voice, atmospheric ambient soundscape, relaxing storytelling tone, perfect for bedtime listening.",
+    tags: [],
+    category: "Audio",
+    gradient: "",
+    image: template01,
+  },
+  {
+    id: "a2",
+    title: "Epic Sagas",
+    description: "Sweeping fantasy narrations with cinematic scoring. Heroic voice acting brings legendary adventures to life through immersive audio production.",
+    prompt: "Sweeping epic fantasy audiobook with heroic voice acting, cinematic orchestral scoring, immersive sound design, legendary adventure narration.",
+    tags: [],
+    category: "Audio",
+    gradient: "",
+    image: template02,
+  },
+  {
+    id: "a3",
+    title: "Mystery Hour",
+    description: "Suspenseful detective narratives with noir-inspired delivery. Tension-building pacing and shadowy soundscapes draw listeners into every twist.",
+    prompt: "Suspenseful detective audiobook with noir-inspired narration, tension-building pacing, shadowy atmospheric soundscape, mystery storytelling.",
+    tags: [],
+    category: "Audio",
+    gradient: "",
+    image: template04,
+  },
+  {
+    id: "a4",
+    title: "Kids Wonder",
+    description: "Cheerful children's stories with expressive character voices. Playful sound effects and warm narration spark imagination for young listeners.",
+    prompt: "Cheerful children's audiobook with expressive character voices, playful sound effects, warm and engaging narration, sparking young imaginations.",
+    tags: [],
+    category: "Audio",
+    gradient: "",
+    image: template06,
+  },
+  {
+    id: "a5",
+    title: "Mindful Reads",
+    description: "Calming meditation and self-help narrations. Gentle pacing with ambient nature sounds creates a serene listening experience for personal growth.",
+    prompt: "Calming meditation audiobook with gentle pacing, ambient nature soundscape, serene self-help narration, mindful and grounding tone.",
+    tags: [],
+    category: "Audio",
+    gradient: "",
+    image: template09,
+  },
+];
+
+export function getTemplatesByMode(mode: "story" | "audiobook"): Template[] {
+  return mode === "audiobook" ? templatesAudiobook : templates;
+}
