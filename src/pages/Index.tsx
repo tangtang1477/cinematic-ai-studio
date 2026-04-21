@@ -238,6 +238,9 @@ const Index = () => {
           {templates.map((t) => (
             <img key={t.id} src={t.image} alt="" decoding="async" loading="eager" />
           ))}
+          {templateImagesAlt.map((src, i) => (
+            <img key={`alt-${i}`} src={src} alt="" decoding="async" loading="eager" />
+          ))}
           <img src={cardBackImg} alt="" decoding="async" loading="eager" />
         </div>
       </div>
