@@ -316,8 +316,13 @@ const Index = () => {
                 }}
               >
                 {cardsSettled && (
-                  <div className="flex items-end justify-center">
-                    {templates.map((t, i) => {
+                  <div
+                    key={`${mode}-${refreshKey}`}
+                    className={`flex items-end justify-center ${
+                      isRefreshing ? "animate-card-refresh-out" : ""
+                    }`}
+                  >
+                    {activeTemplates.map((t, i) => {
                       const ct = CARD_FINAL_TRANSFORMS[i];
                       const isSelected = selectedId === t.id;
                       const isDimmed = selectedId !== null && !isSelected;
@@ -327,6 +332,7 @@ const Index = () => {
                       return (
                         <div
                           key={t.id}
+                          className="hover:!-translate-y-5 hover:!rotate-0 hover:!z-20 animate-card-refresh-in"
                           style={{
                             width: `${CARD_WIDTH}px`,
                             marginLeft: i === 0 ? 0 : `${CARD_OVERLAP}px`,
@@ -345,8 +351,8 @@ const Index = () => {
                             transformOrigin: "bottom center",
                             transition:
                               "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), filter 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+                            animationDelay: `${i * 50}ms`,
                           }}
-                          className="hover:!-translate-y-5 hover:!rotate-0 hover:!z-20"
                         >
                           <TemplateCard template={t} onTry={handleTryWithSelect(t.id)} />
                         </div>
