@@ -169,10 +169,14 @@ const CreationPanel = ({
   onModeChange,
   voice,
   onVoiceChange,
+  generationMode,
+  onGenerationModeChange,
 }: CreationPanelProps) => {
   const currentDuration = durations.find((d) => d.value === duration);
   const currentRatio = aspectRatios.find((r) => r.value === aspectRatio) || aspectRatios[0];
   const currentVoice = voices.find((v) => v.value === voice) || voices[0];
+  const currentGenMode =
+    generationModes.find((g) => g.value === generationMode) || generationModes[0];
 
   return (
     <div className="w-full max-w-[720px] mx-auto px-4 pt-4 pb-2">
