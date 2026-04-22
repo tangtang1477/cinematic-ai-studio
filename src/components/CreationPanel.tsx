@@ -1,4 +1,4 @@
-import { Wand2, ChevronDown, Mic } from "lucide-react";
+import { Wand2, ChevronDown, Mic, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -11,6 +11,7 @@ import iconTime from "@/assets/icon-time.svg";
 
 export type AspectRatio = "16:9" | "9:16" | "3:4" | "4:3";
 export type CreationMode = "story" | "audiobook";
+export type GenerationMode = "Instant" | "Director";
 
 interface CreationPanelProps {
   prompt: string;
@@ -25,6 +26,8 @@ interface CreationPanelProps {
   onModeChange: (val: CreationMode) => void;
   voice: string;
   onVoiceChange: (val: string) => void;
+  generationMode: GenerationMode;
+  onGenerationModeChange: (val: GenerationMode) => void;
 }
 
 const durations = [
@@ -47,6 +50,11 @@ const voices = [
   { value: "calm-male", label: "Calm Male" },
   { value: "youthful", label: "Youthful" },
   { value: "intellectual-female", label: "Intellectual Female" },
+];
+
+const generationModes: { value: GenerationMode; label: string; hint: string }[] = [
+  { value: "Instant", label: "一键生成", hint: "One-click to magic." },
+  { value: "Director", label: "过程控制", hint: "Co-create with AI step-by-step." },
 ];
 
 const tabs: { value: CreationMode; label: string }[] = [
@@ -161,10 +169,14 @@ const CreationPanel = ({
   onModeChange,
   voice,
   onVoiceChange,
+  generationMode,
+  onGenerationModeChange,
 }: CreationPanelProps) => {
   const currentDuration = durations.find((d) => d.value === duration);
   const currentRatio = aspectRatios.find((r) => r.value === aspectRatio) || aspectRatios[0];
   const currentVoice = voices.find((v) => v.value === voice) || voices[0];
+  const currentGenMode =
+    generationModes.find((g) => g.value === generationMode) || generationModes[0];
 
   return (
     <div className="w-full max-w-[720px] mx-auto px-4 pt-4 pb-2">
@@ -330,6 +342,44 @@ const CreationPanel = ({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
+          {/* Generation mode dropdown — always visible */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90"
+                style={{ background: "rgba(255,255,255,0.06)" }}
+              >
+                <Sparkles className="w-3.5 h-3.5 opacity-70" />
+                {currentGenMode.label}
+                <ChevronDown className="w-3 h-3 opacity-50" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="min-w-[180px]"
+              style={{
+                background: "rgba(30,30,30,0.95)",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
+            >
+              {generationModes.map((g) => (
+                <DropdownMenuItem
+                  key={g.value}
+                  onClick={() => onGenerationModeChange(g.value)}
+                  className={`group flex flex-col items-start gap-0.5 text-[13px] ${
+                    generationMode === g.value ? "text-primary" : "text-foreground/70"
+                  }`}
+                >
+                  <span>{g.label}</span>
+                  <span className="text-[10px] italic text-foreground/40 group-hover:text-foreground/60 transition-colors">
+                    {g.hint}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Spacer */}
           <div className="flex-1" />
