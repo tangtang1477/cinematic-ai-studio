@@ -6,6 +6,7 @@ import TemplateCard from "@/components/TemplateCard";
 import FlyingCardsScene from "@/components/FlyingCardsScene";
 import { templates, templateImagesAlt } from "@/data/templates";
 import type { AspectRatio } from "@/components/CreationPanel";
+import type { GenerationMode } from "@/components/CreationPanel";
 import cardBackImg from "@/assets/card-back-sm.webp";
 
 type Phase = "intro" | "loop" | "cards-fly" | "ready";
@@ -52,6 +53,7 @@ const Index = () => {
   const [voiceover, setVoiceover] = useState(false);
   const [mode, setMode] = useState<"story" | "audiobook">("story");
   const [voice, setVoice] = useState("warm-female");
+  const [generationMode, setGenerationMode] = useState<GenerationMode>("Instant");
   const [phase, setPhase] = useState<Phase>("intro");
   const [showPanel, setShowPanel] = useState(false);
   const [cardsVisible, setCardsVisible] = useState(false);
@@ -70,7 +72,6 @@ const Index = () => {
 
   const handleTry = useCallback((templatePrompt: string) => {
     setPrompt(templatePrompt);
-    setMode("story");
     setShowPanel(true);
   }, []);
 
@@ -285,6 +286,8 @@ const Index = () => {
               onModeChange={handleModeChange}
               voice={voice}
               onVoiceChange={setVoice}
+              generationMode={generationMode}
+              onGenerationModeChange={setGenerationMode}
             />
           </div>
 
