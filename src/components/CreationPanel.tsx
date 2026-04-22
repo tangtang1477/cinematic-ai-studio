@@ -53,8 +53,8 @@ const voices = [
 ];
 
 const generationModes: { value: GenerationMode; label: string; hint: string }[] = [
-  { value: "Instant", label: "一键生成", hint: "One-click to magic." },
-  { value: "Director", label: "过程控制", hint: "Co-create with AI step-by-step." },
+  { value: "Instant", label: "Instant", hint: "One-click to magic." },
+  { value: "Director", label: "Director", hint: "Co-create with AI step-by-step." },
 ];
 
 const tabs: { value: CreationMode; label: string }[] = [
