@@ -1,4 +1,4 @@
-import { Wand2, ChevronDown, Mic } from "lucide-react";
+import { Wand2, ChevronDown, Mic, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -11,6 +11,7 @@ import iconTime from "@/assets/icon-time.svg";
 
 export type AspectRatio = "16:9" | "9:16" | "3:4" | "4:3";
 export type CreationMode = "story" | "audiobook";
+export type GenerationMode = "Instant" | "Director";
 
 interface CreationPanelProps {
   prompt: string;
@@ -25,6 +26,8 @@ interface CreationPanelProps {
   onModeChange: (val: CreationMode) => void;
   voice: string;
   onVoiceChange: (val: string) => void;
+  generationMode: GenerationMode;
+  onGenerationModeChange: (val: GenerationMode) => void;
 }
 
 const durations = [
@@ -47,6 +50,11 @@ const voices = [
   { value: "calm-male", label: "Calm Male" },
   { value: "youthful", label: "Youthful" },
   { value: "intellectual-female", label: "Intellectual Female" },
+];
+
+const generationModes: { value: GenerationMode; label: string; hint: string }[] = [
+  { value: "Instant", label: "一键生成", hint: "One-click to magic." },
+  { value: "Director", label: "过程控制", hint: "Co-create with AI step-by-step." },
 ];
 
 const tabs: { value: CreationMode; label: string }[] = [
