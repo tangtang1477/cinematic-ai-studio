@@ -341,7 +341,7 @@ const Index = () => {
                             transition:
                               "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), filter 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
                           }}
-                          className="hover:!-translate-y-5 hover:!rotate-0 hover:!z-20"
+                          className="hover:!-translate-y-5 hover:!rotate-0 hover:!z-20 hover:!opacity-100"
                         >
                           <div
                             key={`${t.id}-${imageSwapKey}`}
