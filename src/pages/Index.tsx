@@ -53,7 +53,7 @@ const Index = () => {
   const [voiceover, setVoiceover] = useState(false);
   const [mode, setMode] = useState<"story" | "audiobook">("story");
   const [voice, setVoice] = useState("warm-female");
-  const [generationMode, setGenerationMode] = useState<GenerationMode>("Instant");
+  const [generationMode, setGenerationMode] = useState<GenerationMode>("Director");
   const [phase, setPhase] = useState<Phase>("intro");
   const [showPanel, setShowPanel] = useState(false);
   const [cardsVisible, setCardsVisible] = useState(false);
