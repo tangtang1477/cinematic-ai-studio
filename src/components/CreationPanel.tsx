@@ -368,12 +368,14 @@ const CreationPanel = ({
                 <DropdownMenuItem
                   key={g.value}
                   onClick={() => onGenerationModeChange(g.value)}
-                  className={`group flex flex-col items-start gap-0.5 text-[13px] ${
-                    generationMode === g.value ? "text-primary" : "text-foreground/70"
+                  className={`group flex flex-col items-start gap-0.5 text-[13px] focus:bg-transparent focus:text-foreground hover:!bg-transparent ${
+                    generationMode === g.value
+                      ? "text-primary"
+                      : "text-foreground/70 hover:!text-foreground"
                   }`}
                 >
                   <span>{g.label}</span>
-                  <span className="text-[10px] italic text-foreground/40 group-hover:text-foreground/60 transition-colors">
+                  <span className="text-[10px] italic text-foreground/40 group-hover:text-foreground/70 transition-colors">
                     {g.hint}
                   </span>
                 </DropdownMenuItem>
