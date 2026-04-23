@@ -179,7 +179,7 @@ const CreationPanel = ({
     generationModes.find((g) => g.value === generationMode) || generationModes[0];
 
   return (
-    <div className="w-full max-w-[720px] mx-auto px-4 pt-4 pb-2">
+    <div className="w-full max-w-[1440px] mx-auto px-4 pt-4 pb-2">
       <div
         className="rounded-2xl overflow-hidden"
         style={{
@@ -202,9 +202,10 @@ const CreationPanel = ({
                 ? "Describe the 3D video you want to create..."
                 : "Paste or write the text you want narrated..."
             }
-            rows={2}
+            rows={3}
             className="w-full bg-transparent text-[14px] text-foreground placeholder:text-foreground/25
-              resize-none focus:outline-none leading-relaxed"
+              resize-none focus:outline-none leading-relaxed
+              max-h-[120px] overflow-y-auto thin-scrollbar"
           />
         </div>
 

@@ -244,6 +244,14 @@ const Index = () => {
           ))}
           <img src={cardBackImg} alt="" decoding="async" loading="eager" />
         </div>
+        {/* Dark overlay — fades in with the input panel for better contrast */}
+        <div
+          className="absolute inset-0 pointer-events-none transition-opacity duration-500"
+          style={{
+            background: "rgba(0,0,0,0.45)",
+            opacity: showPanel ? 1 : 0,
+          }}
+        />
       </div>
 
       <AppSidebar />
