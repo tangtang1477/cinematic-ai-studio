@@ -1,97 +1,80 @@
 
 
-## 需求
+## 需求修正
 
-1. **暗色蒙层**：输入框出现后（`showPanel === true`），在背景视频上方叠加一层半透明暗色蒙层，让输入框更清晰突出
-2. **容器宽度翻倍**：CreationPanel 容器 `max-w-[720px]` → `max-w-[1440px]`（原始宽度的 2 倍），保持居中、保持响应式
-3. **极简白色滚动条**：textarea 内容超出时显示低透明度的白色细滚动条（参考附件图：很细、半透明白色、无背景轨道）
+之前误把"宽度翻倍"实现了，实际需求是：
+1. **宽度回退**：CreationPanel 容器 `max-w-[1440px]` → 恢复 `max-w-[720px]`
+2. **高度自适应**：textarea 随文本长度纵向拉长，最大高度为默认高度的 2 倍
+3. **保留**：极简白色细滚动条（达到 max-height 后出现）、暗色蒙层
 
 ## 方案
 
-### 改动 1：暗色蒙层（`src/pages/Index.tsx`）
-
-在视频背景层（`fixed inset-0 z-0` 那个 div）内、所有 video 元素之后，新增一个蒙层 div：
-
-```tsx
-<div
-  className="absolute inset-0 pointer-events-none transition-opacity duration-500"
-  style={{
-    background: "rgba(0,0,0,0.45)",
-    opacity: showPanel ? 1 : 0,
-  }}
-/>
-```
-
-- 仅在 `showPanel = true` 时淡入
-- `pointer-events-none` 不影响交互
-- 透明度 0.45 让背景视频依然可见但显著压暗
-- 与输入框的 0.45s 淡入同步
-
-### 改动 2：容器宽度翻倍（`src/components/CreationPanel.tsx` L182）
-
-```tsx
-<div className="w-full max-w-[720px] mx-auto px-4 pt-4 pb-2">
-```
-
-改为：
+### 改动 1：宽度回退（`src/components/CreationPanel.tsx` L182）
 
 ```tsx
 <div className="w-full max-w-[1440px] mx-auto px-4 pt-4 pb-2">
 ```
 
-`mx-auto` 保留居中，`w-full` 自适应，小屏自动收缩。
-
-### 改动 3：textarea 极简滚动条（`src/components/CreationPanel.tsx`）
-
-textarea `rows={2}` 改为 `rows={3}`（容器变宽后给更多写作空间），添加 `max-h-[120px] overflow-y-auto` 和自定义滚动条 className：
+改回：
 
 ```tsx
-className="... resize-none focus:outline-none leading-relaxed
-  max-h-[120px] overflow-y-auto thin-scrollbar"
+<div className="w-full max-w-[720px] mx-auto px-4 pt-4 pb-2">
 ```
 
-在 `src/index.css` 全局新增 `.thin-scrollbar` 样式（webkit + firefox 双兼容）：
+### 改动 2：textarea 高度自适应（`src/components/CreationPanel.tsx`）
 
-```css
-.thin-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.2) transparent;
-}
-.thin-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.thin-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.thin-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.2);
-  border-radius: 4px;
-}
-.thin-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.35);
-}
+当前 textarea 是固定 `rows={3}` + `max-h-[120px] overflow-y-auto`，无法随文本动态拉长（rows 只决定初始高度，不会随内容增长，需要 JS 控制 `scrollHeight`）。
+
+改造：
+- `rows={2}` 作为默认（约 ~48px 内容高度，对应原始版本默认值）
+- 新增 `useRef<HTMLTextAreaElement>` + `useEffect` 监听 `prompt` 变化，自动设置 `el.style.height = "auto"` 然后 `el.style.height = Math.min(el.scrollHeight, MAX) + "px"`
+- `MAX = 默认 rows=2 高度 × 2`：以行高 `leading-relaxed`(1.625) × `text-[14px]`(14px) ≈ 22.75px/行计，2 行 ≈ 46px，2 倍 ≈ 92px。取整 **MAX = 96px**（约 4 行内容）
+- textarea className：移除 `max-h-[120px]`，改为 `overflow-y-auto thin-scrollbar`，高度交由 inline style 控制
+- 达到 96px 后内容继续增加，自动出现已实现的 `thin-scrollbar` 细滚动条
+
+代码片段：
+```tsx
+const textareaRef = useRef<HTMLTextAreaElement>(null);
+const MAX_HEIGHT = 96; // 默认 2 行 ≈ 48px 的 2 倍
+
+useEffect(() => {
+  const el = textareaRef.current;
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight, MAX_HEIGHT) + "px";
+}, [prompt]);
 ```
 
-效果：4px 极细、20% 白色透明度、圆角、无轨道背景，与附件图一致。
+textarea 元素：
+```tsx
+<textarea
+  ref={textareaRef}
+  value={prompt}
+  onChange={(e) => onPromptChange(e.target.value)}
+  placeholder={...}
+  rows={2}
+  className="w-full bg-transparent text-[14px] text-foreground placeholder:text-foreground/25
+    resize-none focus:outline-none leading-relaxed
+    overflow-y-auto thin-scrollbar"
+/>
+```
 
 ## 不动
 
-- 视频/loop/intro 播放、phase 状态机、卡片飞入与落定逻辑
-- CreationPanel 5 个下拉、Tabs、Make 按钮、玻璃外框样式
-- 选中/淡化/hover 卡片交互、`imageSwapKey` 切换刷新
-- 父级所有其他状态
+- 暗色蒙层（`src/pages/Index.tsx`）
+- `.thin-scrollbar` 全局样式（`src/index.css`）
+- 5 个下拉、Tabs、Make 按钮、玻璃外框
+- 视频/卡片/状态机所有逻辑
 
 ## 涉及文件
 
 | 文件 | 改动 |
 |---|---|
-| `src/pages/Index.tsx` | 视频层内新增 dark overlay div（受 `showPanel` 控制淡入淡出） |
-| `src/components/CreationPanel.tsx` | 外层容器 `max-w-[720px]` → `max-w-[1440px]`；textarea 加 `max-h` + `overflow-y-auto` + `thin-scrollbar` |
-| `src/index.css` | 新增全局 `.thin-scrollbar` 样式（webkit + firefox） |
+| `src/components/CreationPanel.tsx` | 容器宽度 `max-w-[1440px]` 改回 `max-w-[720px]`；textarea 加 `useRef` + `useEffect` 自适应高度（最大 96px）；移除固定 `max-h-[120px]` |
 
 ## 验收
 
-1. 输入框未出现时：视频清晰无蒙层；输入框淡入时：背景同步压暗 45%，输入框对比度显著提升
-2. 容器宽度从 720px 扩到 1440px，1454px 视口下接近通栏，居中对齐
-3. 在 textarea 中输入超过 3 行的文本：右侧出现 4px 宽、半透明白色细滚动条，无轨道背景，与附件图样式一致
+1. 容器宽度恢复 720px（与最早版本一致），居中
+2. textarea 默认 2 行高度；输入 1 行 → 高度不变；输入到第 3、4 行 → 容器纵向平滑拉长；达到 96px（约 4 行）后高度封顶，超出部分出现极简白色细滚动条
+3. 暗色蒙层、滚动条样式、其他所有交互保持不变
 
