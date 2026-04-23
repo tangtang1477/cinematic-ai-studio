@@ -178,8 +178,18 @@ const CreationPanel = ({
   const currentGenMode =
     generationModes.find((g) => g.value === generationMode) || generationModes[0];
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const MAX_TEXTAREA_HEIGHT = 96;
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT) + "px";
+  }, [prompt]);
+
   return (
-    <div className="w-full max-w-[1440px] mx-auto px-4 pt-4 pb-2">
+    <div className="w-full max-w-[720px] mx-auto px-4 pt-4 pb-2">
       <div
         className="rounded-2xl overflow-hidden"
         style={{
@@ -195,6 +205,7 @@ const CreationPanel = ({
         {/* Input area */}
         <div className="px-5 pt-3 pb-1">
           <textarea
+            ref={textareaRef}
             value={prompt}
             onChange={(e) => onPromptChange(e.target.value)}
             placeholder={
@@ -202,10 +213,10 @@ const CreationPanel = ({
                 ? "Describe the 3D video you want to create..."
                 : "Paste or write the text you want narrated..."
             }
-            rows={3}
+            rows={2}
             className="w-full bg-transparent text-[14px] text-foreground placeholder:text-foreground/25
               resize-none focus:outline-none leading-relaxed
-              max-h-[120px] overflow-y-auto thin-scrollbar"
+              overflow-y-auto thin-scrollbar"
           />
         </div>
 
