@@ -179,7 +179,7 @@ const CreationPanel = ({
     generationModes.find((g) => g.value === generationMode) || generationModes[0];
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const MAX_TEXTAREA_HEIGHT = 96;
+  const MAX_TEXTAREA_HEIGHT = 128;
 
   useEffect(() => {
     const el = textareaRef.current;
