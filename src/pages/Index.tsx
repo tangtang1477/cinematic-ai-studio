@@ -11,6 +11,14 @@ import type { GenerationMode } from "@/components/CreationPanel";
 import cardBackImg from "@/assets/card-back-sm.webp";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+const MobileSettleTrigger = ({ onSettled }: { onSettled: () => void }) => {
+  useEffect(() => {
+    const t = setTimeout(onSettled, 300);
+    return () => clearTimeout(t);
+  }, [onSettled]);
+  return null;
+};
+
 type Phase = "intro" | "loop" | "cards-fly" | "ready";
 
 const CARD_WIDTH = 220;
