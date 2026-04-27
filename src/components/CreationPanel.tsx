@@ -1,4 +1,4 @@
-import { Wand2, ChevronDown, Mic, Sparkles } from "lucide-react";
+import { Wand2, ChevronDown, Mic, Sparkles, Box } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import iconTime from "@/assets/icon-time.svg";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type AspectRatio = "16:9" | "9:16" | "3:4" | "4:3";
 export type CreationMode = "story" | "audiobook";
@@ -172,6 +173,7 @@ const CreationPanel = ({
   generationMode,
   onGenerationModeChange,
 }: CreationPanelProps) => {
+  const isMobile = useIsMobile();
   const currentDuration = durations.find((d) => d.value === duration);
   const currentRatio = aspectRatios.find((r) => r.value === aspectRatio) || aspectRatios[0];
   const currentVoice = voices.find((v) => v.value === voice) || voices[0];
@@ -221,16 +223,31 @@ const CreationPanel = ({
         </div>
 
         {/* Controls row */}
-        <div className="px-5 pb-3 flex items-center gap-2 flex-wrap">
+        <div
+          className={
+            isMobile
+              ? "px-3 pb-2 flex items-center gap-1.5 flex-nowrap"
+              : "px-5 pb-3 flex items-center gap-2 flex-wrap"
+          }
+        >
           {/* Model dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90"
+                className={`flex items-center rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90 ${
+                  isMobile ? "gap-0 px-2 py-1.5" : "gap-1.5 px-3 py-1.5"
+                }`}
                 style={{ background: "rgba(255,255,255,0.06)" }}
+                aria-label="Model"
               >
-                Seedance 2.0
-                <ChevronDown className="w-3 h-3 opacity-50" />
+                {isMobile ? (
+                  <Box className="w-3.5 h-3.5 opacity-70" />
+                ) : (
+                  <>
+                    Seedance 2.0
+                    <ChevronDown className="w-3 h-3 opacity-50" />
+                  </>
+                )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -256,12 +273,19 @@ const CreationPanel = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90"
+                  className={`flex items-center rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90 ${
+                    isMobile ? "gap-0 px-2 py-1.5" : "gap-1.5 px-3 py-1.5"
+                  }`}
                   style={{ background: "rgba(255,255,255,0.06)" }}
+                  aria-label="Duration"
                 >
                   <img src={iconTime} alt="Duration" className="w-3.5 h-3.5 opacity-70" />
-                  {currentDuration?.label || "1 min"}
-                  <ChevronDown className="w-3 h-3 opacity-50" />
+                  {!isMobile && (
+                    <>
+                      {currentDuration?.label || "1 min"}
+                      <ChevronDown className="w-3 h-3 opacity-50" />
+                    </>
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -290,12 +314,19 @@ const CreationPanel = ({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90"
+                className={`flex items-center rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90 ${
+                  isMobile ? "gap-0 px-2 py-1.5" : "gap-1.5 px-3 py-1.5"
+                }`}
                 style={{ background: "rgba(255,255,255,0.06)" }}
+                aria-label="Aspect ratio"
               >
                 <RatioIcon w={currentRatio.w} h={currentRatio.h} />
-                {currentRatio.label}
-                <ChevronDown className="w-3 h-3 opacity-50" />
+                {!isMobile && (
+                  <>
+                    {currentRatio.label}
+                    <ChevronDown className="w-3 h-3 opacity-50" />
+                  </>
+                )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -325,12 +356,19 @@ const CreationPanel = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90"
+                  className={`flex items-center rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90 ${
+                    isMobile ? "gap-0 px-2 py-1.5" : "gap-1.5 px-3 py-1.5"
+                  }`}
                   style={{ background: "rgba(255,255,255,0.06)" }}
+                  aria-label="Voice"
                 >
                   <Mic className="w-3.5 h-3.5 opacity-70" />
-                  {currentVoice.label}
-                  <ChevronDown className="w-3 h-3 opacity-50" />
+                  {!isMobile && (
+                    <>
+                      {currentVoice.label}
+                      <ChevronDown className="w-3 h-3 opacity-50" />
+                    </>
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -359,12 +397,19 @@ const CreationPanel = ({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90"
+                className={`flex items-center rounded-full text-[12px] text-foreground/70 transition-colors hover:text-foreground/90 ${
+                  isMobile ? "gap-0 px-2 py-1.5" : "gap-1.5 px-3 py-1.5"
+                }`}
                 style={{ background: "rgba(255,255,255,0.06)" }}
+                aria-label="Generation mode"
               >
                 <Sparkles className="w-3.5 h-3.5 opacity-70" />
-                {currentGenMode.label}
-                <ChevronDown className="w-3 h-3 opacity-50" />
+                {!isMobile && (
+                  <>
+                    {currentGenMode.label}
+                    <ChevronDown className="w-3 h-3 opacity-50" />
+                  </>
+                )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -399,8 +444,14 @@ const CreationPanel = ({
           <div className="flex-1" />
 
           {/* Generate button */}
-          <button className="glass-btn flex items-center gap-2 px-5 py-2 rounded-full text-foreground font-medium text-[13px]">
-            <Wand2 className="w-4 h-4 relative z-10" />
+          <button
+            className={`glass-btn flex items-center rounded-full text-foreground font-medium ${
+              isMobile
+                ? "gap-1.5 px-3 py-1.5 text-[12px]"
+                : "gap-2 px-5 py-2 text-[13px]"
+            }`}
+          >
+            <Wand2 className={`relative z-10 ${isMobile ? "w-3.5 h-3.5" : "w-4 h-4"}`} />
             <span className="relative z-10">Make</span>
           </button>
         </div>

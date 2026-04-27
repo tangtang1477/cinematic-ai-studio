@@ -1,80 +1,68 @@
+## 需求
 
-
-## 需求修正
-
-之前误把"宽度翻倍"实现了，实际需求是：
-1. **宽度回退**：CreationPanel 容器 `max-w-[1440px]` → 恢复 `max-w-[720px]`
-2. **高度自适应**：textarea 随文本长度纵向拉长，最大高度为默认高度的 2 倍
-3. **保留**：极简白色细滚动条（达到 max-height 后出现）、暗色蒙层
+仅针对移动端（< 768px），桌面端完全不动：
+1. **卡片布局**：取消横向滚动，5 张卡片在默认视口内全部可见
+2. **CreationPanel 控件行**：当前控件 wrap 成 2 行，改为图标化压缩到 1 行
 
 ## 方案
 
-### 改动 1：宽度回退（`src/components/CreationPanel.tsx` L182）
+### 改动 1：移动端卡片改为等宽紧凑栅格（`src/pages/Index.tsx`）
+
+390px 视口下，移除横向滚动，改为 5 列等宽 flex 布局：
+
+- 容器：`flex justify-center gap-1.5 px-3` ，去掉 `overflow-x-auto`、`w-screen`
+- 每张卡片宽度：`flex: 1 1 0`，`max-width: 64px`（5×64 + 4×6 间隙 = 344px，留有余量）
+- 卡片自身 3:4 比例由 TemplateCard 内部 `aspectRatio: "3/4"` 保持，高度自动 ≈ 85px
+- 选中态：保留 `translateY(-6px)` 和发光描边
+- 桌面端逻辑（扇形 + 飞入动画）一行不动
 
 ```tsx
-<div className="w-full max-w-[1440px] mx-auto px-4 pt-4 pb-2">
+// 仅当 isMobile 时
+<div className="flex items-end justify-center gap-1.5 px-3 w-full">
+  {templates.map((t, i) => (
+    <div style={{ flex: "1 1 0", maxWidth: 64, ... }}>
+      <TemplateCard ... />
+    </div>
+  ))}
+</div>
 ```
 
-改回：
+由于卡片很小，移动端 TemplateCard 内部需要隐藏底部描述文字，仅保留图片 + tap 后浮出 Try 按钮。在 TemplateCard 增加可选 `compact` prop（默认 false），移动端传 `compact`，描述段落隐藏，Try 按钮缩小为图标按钮。
 
-```tsx
-<div className="w-full max-w-[720px] mx-auto px-4 pt-4 pb-2">
-```
+### 改动 2：CreationPanel 控件行图标化（`src/components/CreationPanel.tsx`）
 
-### 改动 2：textarea 高度自适应（`src/components/CreationPanel.tsx`）
+当前 5 个胶囊按钮（Model / Duration / Aspect / Voice / GenMode）+ Make 按钮，在 390px 下必然 2 行。
 
-当前 textarea 是固定 `rows={3}` + `max-h-[120px] overflow-y-auto`，无法随文本动态拉长（rows 只决定初始高度，不会随内容增长，需要 JS 控制 `scrollHeight`）。
+移动端策略（用 `useIsMobile` 检测）：
+- **隐藏文字标签**，仅保留 icon + ChevronDown 小箭头
+  - Model：去掉 "Seedance 2.0" 文字 → 只剩 icon（用 `Box` 或 `Layers` 图标，原本无 icon 需新增）
+  - Duration：保留 `iconTime`，去掉 "1 min" 文字
+  - Aspect：保留 RatioIcon，去掉 "16:9" 文字
+  - Voice：保留 `Mic` icon，去掉 "Warm Female" 文字
+  - GenMode：保留 `Sparkles` icon，去掉 "Director" 文字
+- 按钮 padding 从 `px-3 py-1.5` → `px-2 py-1.5`，移除 `ChevronDown`（移动端）
+- Make 按钮：保留图标 + 文字，但缩小为 `px-3 py-1.5`
+- 容器内边距 `px-5 pb-3` → `px-3 pb-2`，gap 从 `gap-2` → `gap-1.5`
+- `flex-wrap` 改为 `flex-nowrap`，确保 1 行
 
-改造：
-- `rows={2}` 作为默认（约 ~48px 内容高度，对应原始版本默认值）
-- 新增 `useRef<HTMLTextAreaElement>` + `useEffect` 监听 `prompt` 变化，自动设置 `el.style.height = "auto"` 然后 `el.style.height = Math.min(el.scrollHeight, MAX) + "px"`
-- `MAX = 默认 rows=2 高度 × 2`：以行高 `leading-relaxed`(1.625) × `text-[14px]`(14px) ≈ 22.75px/行计，2 行 ≈ 46px，2 倍 ≈ 92px。取整 **MAX = 96px**（约 4 行内容）
-- textarea className：移除 `max-h-[120px]`，改为 `overflow-y-auto thin-scrollbar`，高度交由 inline style 控制
-- 达到 96px 后内容继续增加，自动出现已实现的 `thin-scrollbar` 细滚动条
+预估宽度：5 × 36px（icon 按钮）+ 4 × 6px gap + Make ~70px + 容器内边距 24px ≈ 298px，在 390px 视口内安全单行。
 
-代码片段：
-```tsx
-const textareaRef = useRef<HTMLTextAreaElement>(null);
-const MAX_HEIGHT = 96; // 默认 2 行 ≈ 48px 的 2 倍
+桌面端（`!isMobile`）渲染保持完整文字 + ChevronDown，不动。
 
-useEffect(() => {
-  const el = textareaRef.current;
-  if (!el) return;
-  el.style.height = "auto";
-  el.style.height = Math.min(el.scrollHeight, MAX_HEIGHT) + "px";
-}, [prompt]);
-```
+### 改动 3：辅助 - 移动端去掉 Tabs 上方输入区的 placeholder 长度问题
 
-textarea 元素：
-```tsx
-<textarea
-  ref={textareaRef}
-  value={prompt}
-  onChange={(e) => onPromptChange(e.target.value)}
-  placeholder={...}
-  rows={2}
-  className="w-full bg-transparent text-[14px] text-foreground placeholder:text-foreground/25
-    resize-none focus:outline-none leading-relaxed
-    overflow-y-auto thin-scrollbar"
-/>
-```
-
-## 不动
-
-- 暗色蒙层（`src/pages/Index.tsx`）
-- `.thin-scrollbar` 全局样式（`src/index.css`）
-- 5 个下拉、Tabs、Make 按钮、玻璃外框
-- 视频/卡片/状态机所有逻辑
+CreationPanel 的 textarea 当前 `rows={2}`，placeholder 较长，在窄屏会换行。这部分暂不动（已能正常显示），保持现状。
 
 ## 涉及文件
 
 | 文件 | 改动 |
 |---|---|
-| `src/components/CreationPanel.tsx` | 容器宽度 `max-w-[1440px]` 改回 `max-w-[720px]`；textarea 加 `useRef` + `useEffect` 自适应高度（最大 96px）；移除固定 `max-h-[120px]` |
+| `src/pages/Index.tsx` | 移动端卡片容器：去掉 `overflow-x-auto`、`w-screen`、固定 160px 宽；改为 `flex justify-center gap-1.5`，每卡 `flex:1 1 0` + `max-width:64px`；传 `compact` 给 TemplateCard |
+| `src/components/TemplateCard.tsx` | 新增 `compact?: boolean` prop；compact 模式隐藏描述段落，Try 按钮改为仅图标小尺寸 |
+| `src/components/CreationPanel.tsx` | 引入 `useIsMobile`；移动端控件按钮去掉文字 label 与 ChevronDown，仅保留 icon；Model 按钮新增一个 icon（`Box`）；容器 padding/gap 收紧；保持桌面端原状 |
 
 ## 验收
 
-1. 容器宽度恢复 720px（与最早版本一致），居中
-2. textarea 默认 2 行高度；输入 1 行 → 高度不变；输入到第 3、4 行 → 容器纵向平滑拉长；达到 96px（约 4 行）后高度封顶，超出部分出现极简白色细滚动条
-3. 暗色蒙层、滚动条样式、其他所有交互保持不变
-
+1. 390px 视口：5 张小卡片在 hero 下方一行平铺居中，无需滚动即可看全
+2. CreationPanel 控件行 5 个 icon 按钮 + Make 按钮一行排列，不换行
+3. 768px 及以上视口：卡片扇形堆叠 + 飞入动画 + 控件完整文字，与之前完全一致
