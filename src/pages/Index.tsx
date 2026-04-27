@@ -326,7 +326,7 @@ const Index = () => {
               {/* Landed cards */}
               <div
                 style={{
-                  marginTop: `${isMobile ? 32 : TITLE_TO_CARDS_GAP}px`,
+                  marginTop: `${isMobile ? 24 : TITLE_TO_CARDS_GAP}px`,
                   pointerEvents: "auto",
                   width: isMobile ? "100%" : undefined,
                 }}
@@ -335,7 +335,7 @@ const Index = () => {
                   <div
                     className={
                       isMobile
-                        ? "flex items-end justify-center gap-1.5 px-3 w-full"
+                        ? "grid grid-cols-2 gap-2.5 px-4 w-full max-w-[420px] mx-auto"
                         : "flex items-end justify-center"
                     }
                   >
@@ -350,19 +350,23 @@ const Index = () => {
                         mode === "audiobook" ? templateImagesAlt[i] : t.image;
                       const displayTemplate = { ...t, image: displayImage };
                       if (isMobile) {
+                        // Last (5th) card spans both columns and centers itself
+                        const isLastOdd =
+                          i === templates.length - 1 && templates.length % 2 === 1;
                         return (
                           <div
                             key={t.id}
                             style={{
-                              flex: "1 1 0",
-                              maxWidth: 64,
                               borderRadius: "12px",
                               boxShadow: isSelected
                                 ? "0 0 0 2px hsl(var(--primary)), 0 0 20px hsl(var(--primary) / 0.5)"
                                 : "none",
                               transition:
                                 "transform 0.25s ease, box-shadow 0.25s ease",
-                              transform: isSelected ? "translateY(-6px)" : "none",
+                              transform: isSelected ? "translateY(-4px)" : "none",
+                              gridColumn: isLastOdd ? "1 / -1" : undefined,
+                              justifySelf: isLastOdd ? "center" : undefined,
+                              width: isLastOdd ? "calc(50% - 5px)" : "100%",
                             }}
                           >
                             <div
@@ -373,7 +377,6 @@ const Index = () => {
                               <TemplateCard
                                 template={displayTemplate}
                                 onTry={handleTryWithSelect(t.id)}
-                                compact
                               />
                             </div>
                           </div>
