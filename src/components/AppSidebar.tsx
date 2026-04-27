@@ -18,7 +18,7 @@ const AppSidebar = () => {
   const activeId = "channel";
 
   return (
-    <div className="fixed left-0 top-0 z-50 h-screen w-[88px]">
+    <div className="fixed left-0 top-0 z-50 h-screen w-[88px] hidden md:block">
       {/* Logo */}
       <div className="absolute left-4 top-4 cursor-pointer">
         <img src={logoM} alt="MovieFlow" className="w-10 h-10 object-contain" />

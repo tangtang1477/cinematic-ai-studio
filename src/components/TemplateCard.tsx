@@ -20,6 +20,7 @@ const TemplateCard = ({ template, onTry, noOverlay = false }: TemplateCardProps)
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => setHovered((h) => !h)}
     >
       <img
         src={template.image}

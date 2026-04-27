@@ -11,18 +11,16 @@ const HeroSection = ({ phase }: HeroSectionProps) => {
       style={{ paddingBottom: "16px" }}
     >
       <h1
-        className="font-bold text-foreground leading-tight mb-3"
+        className="font-bold text-foreground leading-tight mb-3 text-[28px] md:text-[48px]"
         style={{
-          fontSize: "48px",
           textShadow: "0 2px 16px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.4), 0 0 60px rgba(113,240,246,0.15)",
         }}
       >
         3D Creation Studio
       </h1>
       <p
-        className="text-foreground/50 leading-[24px]"
+        className="text-foreground/50 leading-snug md:leading-[24px] text-[14px] md:text-[20px] px-4 md:px-0"
         style={{
-          fontSize: "20px",
           textShadow: "0 2px 12px rgba(0,0,0,0.6), 0 0 20px rgba(0,0,0,0.3)",
         }}
       >

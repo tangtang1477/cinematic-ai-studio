@@ -189,7 +189,7 @@ const CreationPanel = ({
   }, [prompt]);
 
   return (
-    <div className="w-full max-w-[720px] mx-auto px-4 pt-4 pb-2">
+    <div className="w-full max-w-[720px] mx-auto px-3 md:px-4 pt-2 md:pt-4 pb-2">
       <div
         className="rounded-2xl overflow-hidden"
         style={{

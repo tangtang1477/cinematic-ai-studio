@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import AppSidebar from "@/components/AppSidebar";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import HeroSection from "@/components/HeroSection";
 import CreationPanel from "@/components/CreationPanel";
 import TemplateCard from "@/components/TemplateCard";
@@ -8,6 +9,15 @@ import { templates, templateImagesAlt } from "@/data/templates";
 import type { AspectRatio } from "@/components/CreationPanel";
 import type { GenerationMode } from "@/components/CreationPanel";
 import cardBackImg from "@/assets/card-back-sm.webp";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+const MobileSettleTrigger = ({ onSettled }: { onSettled: () => void }) => {
+  useEffect(() => {
+    const t = setTimeout(onSettled, 300);
+    return () => clearTimeout(t);
+  }, [onSettled]);
+  return null;
+};
 
 type Phase = "intro" | "loop" | "cards-fly" | "ready";
 
@@ -47,6 +57,7 @@ function preloadTemplateImages(): Promise<void> {
 }
 
 const Index = () => {
+  const isMobile = useIsMobile();
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState("1");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
@@ -255,7 +266,8 @@ const Index = () => {
       </div>
 
       <AppSidebar />
-      <div className="flex-1 ml-[88px] flex flex-col h-screen overflow-hidden relative">
+      <MobileBottomNav />
+      <div className="flex-1 md:ml-[88px] flex flex-col h-screen overflow-hidden relative">
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-[1]">
           <div
@@ -276,7 +288,7 @@ const Index = () => {
               opacity: showPanel ? 1 : 0,
               transform: showPanel ? "translateY(0)" : "translateY(-20px)",
               pointerEvents: showPanel ? "auto" : "none",
-              paddingTop: "64px",
+              paddingTop: isMobile ? "16px" : "64px",
               transition:
                 "opacity 0.45s ease-out, transform 0.45s ease-out",
             }}
@@ -307,19 +319,26 @@ const Index = () => {
           ) : (
             <div
               className="absolute inset-x-0 z-10 flex flex-col items-center"
-              style={{ top: "31%", pointerEvents: "none" }}
+              style={{ top: isMobile ? "22%" : "31%", pointerEvents: "none" }}
             >
               <HeroSection phase={phase} />
 
               {/* Landed cards */}
               <div
                 style={{
-                  marginTop: `${TITLE_TO_CARDS_GAP}px`,
+                  marginTop: `${isMobile ? 32 : TITLE_TO_CARDS_GAP}px`,
                   pointerEvents: "auto",
+                  width: isMobile ? "100%" : undefined,
                 }}
               >
                 {cardsSettled && (
-                  <div className="flex items-end justify-center">
+                  <div
+                    className={
+                      isMobile
+                        ? "flex items-end overflow-x-auto hide-scrollbar gap-3 px-4 pb-2 w-screen"
+                        : "flex items-end justify-center"
+                    }
+                  >
                     {templates.map((t, i) => {
                       const ct = CARD_FINAL_TRANSFORMS[i];
                       const isSelected = selectedId === t.id;
@@ -330,6 +349,35 @@ const Index = () => {
                       const displayImage =
                         mode === "audiobook" ? templateImagesAlt[i] : t.image;
                       const displayTemplate = { ...t, image: displayImage };
+                      if (isMobile) {
+                        return (
+                          <div
+                            key={t.id}
+                            style={{
+                              flex: "0 0 auto",
+                              width: 160,
+                              borderRadius: "12px",
+                              boxShadow: isSelected
+                                ? "0 0 0 2px hsl(var(--primary)), 0 0 20px hsl(var(--primary) / 0.5)"
+                                : "none",
+                              transition:
+                                "transform 0.25s ease, box-shadow 0.25s ease",
+                              transform: isSelected ? "translateY(-6px)" : "none",
+                            }}
+                          >
+                            <div
+                              key={`${t.id}-${imageSwapKey}`}
+                              className="card-swap-anim"
+                              style={{ animationDelay: `${i * 60}ms` }}
+                            >
+                              <TemplateCard
+                                template={displayTemplate}
+                                onTry={handleTryWithSelect(t.id)}
+                              />
+                            </div>
+                          </div>
+                        );
+                      }
                       return (
                         <div
                           key={t.id}
@@ -378,11 +426,16 @@ const Index = () => {
       </div>
 
       {/* ========== FLYING CARDS LAYER (Framer Motion) ========== */}
-      {cardsVisible && !cardsSettled && imagesReady && (
+      {cardsVisible && !cardsSettled && imagesReady && !isMobile && (
         <FlyingCardsScene
           templates={templates}
           onAllSettled={handleAllSettled}
         />
+      )}
+
+      {/* Mobile: skip flying animation, settle instantly */}
+      {cardsVisible && !cardsSettled && imagesReady && isMobile && (
+        <MobileSettleTrigger onSettled={handleAllSettled} />
       )}
     </div>
   );
