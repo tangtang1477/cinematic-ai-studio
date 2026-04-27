@@ -335,7 +335,7 @@ const Index = () => {
                   <div
                     className={
                       isMobile
-                        ? "flex items-end overflow-x-auto hide-scrollbar gap-3 px-4 pb-2 w-screen"
+                        ? "flex items-end justify-center gap-1.5 px-3 w-full"
                         : "flex items-end justify-center"
                     }
                   >
@@ -354,8 +354,8 @@ const Index = () => {
                           <div
                             key={t.id}
                             style={{
-                              flex: "0 0 auto",
-                              width: 160,
+                              flex: "1 1 0",
+                              maxWidth: 64,
                               borderRadius: "12px",
                               boxShadow: isSelected
                                 ? "0 0 0 2px hsl(var(--primary)), 0 0 20px hsl(var(--primary) / 0.5)"
@@ -373,6 +373,7 @@ const Index = () => {
                               <TemplateCard
                                 template={displayTemplate}
                                 onTry={handleTryWithSelect(t.id)}
+                                compact
                               />
                             </div>
                           </div>
