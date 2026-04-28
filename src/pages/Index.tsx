@@ -58,11 +58,6 @@ function preloadTemplateImages(): Promise<void> {
 
 const Index = () => {
   const isMobile = useIsMobile();
-
-  if (isMobile) {
-    return <MobileChannelPage />;
-  }
-
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState("1");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
