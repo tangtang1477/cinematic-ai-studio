@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import AppSidebar from "@/components/AppSidebar";
-import MobileBottomNav from "@/components/MobileBottomNav";
+import MobileChannelPage from "@/components/MobileChannelPage";
 import HeroSection from "@/components/HeroSection";
 import CreationPanel from "@/components/CreationPanel";
 import TemplateCard from "@/components/TemplateCard";
@@ -58,6 +58,11 @@ function preloadTemplateImages(): Promise<void> {
 
 const Index = () => {
   const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return <MobileChannelPage />;
+  }
+
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState("1");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
