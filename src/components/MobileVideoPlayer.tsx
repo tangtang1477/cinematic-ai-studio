@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ArrowLeft, Heart, Sparkles, Send, VolumeX, Volume2 } from "lucide-react";
+import { ArrowLeft, Heart, Send, VolumeX, Volume2 } from "lucide-react";
 import MobileRemixInput from "./MobileRemixInput";
+import remixIcon from "@/assets/icons/remix.svg";
 
 export interface PlayerCard {
   id: string;
@@ -20,6 +21,8 @@ const MobileVideoPlayer = ({ card, onClose }: Props) => {
   const [remixOpen, setRemixOpen] = useState(false);
 
   if (!card) return null;
+
+  const isVideo = /\.(mp4|webm|mov)$/i.test(card.clip);
 
   const fmt = (n: number) =>
     n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
@@ -53,11 +56,22 @@ const MobileVideoPlayer = ({ card, onClose }: Props) => {
       style={{ background: "#000", color: "#fff" }}
     >
       {/* Background clip */}
-      <img
-        src={card.clip}
-        alt={card.title}
-        className="absolute inset-0 w-full h-full object-cover"
-      />
+      {isVideo ? (
+        <video
+          src={card.clip}
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          loop
+          muted={muted}
+          playsInline
+        />
+      ) : (
+        <img
+          src={card.clip}
+          alt={card.title}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
 
       {/* Subtle bottom gradient for legibility */}
       <div
@@ -78,6 +92,20 @@ const MobileVideoPlayer = ({ card, onClose }: Props) => {
       >
         <ArrowLeft size={20} color="#fff" />
       </button>
+
+      {/* Title — Lab */}
+      <div
+        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{
+          top: 24,
+          fontSize: 17,
+          fontWeight: 600,
+          color: "#fff",
+          textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+        }}
+      >
+        Lab
+      </div>
 
       {/* Sound */}
       <button
@@ -114,11 +142,15 @@ const MobileVideoPlayer = ({ card, onClose }: Props) => {
           className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
           aria-label="Remix"
         >
-          <Sparkles
-            size={30}
-            color="#fff"
-            strokeWidth={1.8}
-            style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))" }}
+          <img
+            src={remixIcon}
+            alt=""
+            aria-hidden
+            style={{
+              width: 32,
+              height: 32,
+              filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
+            }}
           />
           <span style={labelStyle}>Remix</span>
         </button>
