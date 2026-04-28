@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Bell, Play, Coins } from "lucide-react";
+import { Bell, Play, Sparkles } from "lucide-react";
 import { templates, templateImagesAlt } from "@/data/templates";
 import MobileBottomNav from "./MobileBottomNav";
 import MobileVideoPlayer, { PlayerCard } from "./MobileVideoPlayer";
@@ -7,6 +7,8 @@ import clip19 from "@/assets/clips/clip-19.gif";
 import clip20 from "@/assets/clips/clip-20.gif";
 import clip21 from "@/assets/clips/clip-21.gif";
 import clip22 from "@/assets/clips/clip-22.gif";
+import clip23 from "@/assets/clips/clip-23.mp4";
+import clip24 from "@/assets/clips/clip-24.mp4";
 
 const TABS = ["For You", "Lab", "AIdeo World", "Fun"] as const;
 type Tab = (typeof TABS)[number];
@@ -23,7 +25,7 @@ const CATEGORIES = [
 ] as const;
 type Category = (typeof CATEGORIES)[number];
 
-const CLIPS = [clip19, clip20, clip21, clip22];
+const CLIPS = [clip19, clip20, clip21, clip22, clip23, clip24];
 
 interface GridCard {
   id: string;
@@ -38,21 +40,41 @@ const MobileChannelPage = () => {
   const [activeCategory, setActiveCategory] = useState<Category>("3D");
   const [playing, setPlaying] = useState<PlayerCard | null>(null);
 
-  // Build a richer card pool, assigning each card a category + clip round-robin.
+  // Build a richer card pool with explicit per-category buckets.
   const allCards: GridCard[] = useMemo(() => {
-    const pool = [
-      ...templates.map((t) => ({ id: t.id, image: t.image, title: t.title })),
-      ...templateImagesAlt.map((image, i) => ({
-        id: `alt-${i}`,
-        image,
-        title: ["Neon Drift", "Ghost Bloom", "Lantern Path", "Starfall", "Echo Tide"][i] ?? "Untitled",
-      })),
-    ];
-    return pool.map((c, i) => ({
-      ...c,
-      category: CATEGORIES[i % CATEGORIES.length],
-      clip: CLIPS[i % CLIPS.length],
+    const baseTemplates = templates.map((t) => ({ image: t.image, title: t.title }));
+    const altTitles = ["Neon Drift", "Ghost Bloom", "Lantern Path", "Starfall", "Echo Tide"];
+    const altTemplates = templateImagesAlt.map((image, i) => ({
+      image,
+      title: altTitles[i] ?? "Untitled",
     }));
+
+    // Each category gets its own 5-item bucket. Reuse images where needed.
+    const buckets: Record<Category, { image: string; title: string }[]> = {
+      "3D": baseTemplates, // 5 items
+      "Live-action": altTemplates, // 5 items
+      "Image Play": [...baseTemplates.slice(0, 2), ...altTemplates.slice(0, 2)],
+      Narrative: [...altTemplates.slice(2, 4), ...baseTemplates.slice(2, 4)],
+      MV: [...baseTemplates.slice(1, 4)],
+      Education: [...altTemplates.slice(0, 3)],
+      Commercial: [...baseTemplates.slice(0, 3)],
+      "2D": [...altTemplates.slice(2, 5)],
+    };
+
+    const out: GridCard[] = [];
+    let clipIdx = 0;
+    (Object.keys(buckets) as Category[]).forEach((cat) => {
+      buckets[cat].forEach((item, i) => {
+        out.push({
+          id: `${cat}-${i}`,
+          image: item.image,
+          title: item.title,
+          category: cat,
+          clip: CLIPS[clipIdx++ % CLIPS.length],
+        });
+      });
+    });
+    return out;
   }, []);
 
   const visibleCards = allCards.filter((c) => c.category === activeCategory);
@@ -72,7 +94,7 @@ const MobileChannelPage = () => {
         </span>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
-            <Coins size={18} color="#71F0F6" />
+            <Sparkles size={18} color="#71F0F6" />
             <span style={{ fontSize: 14, fontWeight: 700 }}>320</span>
           </div>
           <button aria-label="Notifications">
@@ -94,11 +116,11 @@ const MobileChannelPage = () => {
               onClick={() => setActiveTab(t)}
               className="relative pb-1.5"
               style={{
-                fontSize: active ? 18 : 15,
-                fontWeight: active ? 600 : 400,
+                fontSize: 15,
+                fontWeight: 500,
                 color: "#fff",
                 opacity: active ? 1 : 0.5,
-                transition: "opacity .2s, font-size .2s",
+                transition: "opacity .2s",
               }}
             >
               {t}
