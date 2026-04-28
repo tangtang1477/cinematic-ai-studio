@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Bell, Play, Coins } from "lucide-react";
 import { templates, templateImagesAlt } from "@/data/templates";
 import MobileBottomNav from "./MobileBottomNav";
+import MobileVideoPlayer, { PlayerCard } from "./MobileVideoPlayer";
+import clip19 from "@/assets/clips/clip-19.gif";
+import clip20 from "@/assets/clips/clip-20.gif";
+import clip21 from "@/assets/clips/clip-21.gif";
+import clip22 from "@/assets/clips/clip-22.gif";
 
 const TABS = ["For You", "Lab", "AIdeo World", "Fun"] as const;
 type Tab = (typeof TABS)[number];
@@ -18,19 +23,39 @@ const CATEGORIES = [
 ] as const;
 type Category = (typeof CATEGORIES)[number];
 
+const CLIPS = [clip19, clip20, clip21, clip22];
+
+interface GridCard {
+  id: string;
+  image: string;
+  title: string;
+  category: Category;
+  clip: string;
+}
+
 const MobileChannelPage = () => {
   const [activeTab, setActiveTab] = useState<Tab>("Lab");
   const [activeCategory, setActiveCategory] = useState<Category>("3D");
+  const [playing, setPlaying] = useState<PlayerCard | null>(null);
 
-  // Build an 8-card grid from existing template assets.
-  const gridImages = [
-    ...templates.map((t) => ({ id: t.id, image: t.image, title: t.title })),
-    ...templateImagesAlt.slice(0, 3).map((image, i) => ({
-      id: `alt-${i}`,
-      image,
-      title: "Untitled",
-    })),
-  ].slice(0, 8);
+  // Build a richer card pool, assigning each card a category + clip round-robin.
+  const allCards: GridCard[] = useMemo(() => {
+    const pool = [
+      ...templates.map((t) => ({ id: t.id, image: t.image, title: t.title })),
+      ...templateImagesAlt.map((image, i) => ({
+        id: `alt-${i}`,
+        image,
+        title: ["Neon Drift", "Ghost Bloom", "Lantern Path", "Starfall", "Echo Tide"][i] ?? "Untitled",
+      })),
+    ];
+    return pool.map((c, i) => ({
+      ...c,
+      category: CATEGORIES[i % CATEGORIES.length],
+      clip: CLIPS[i % CLIPS.length],
+    }));
+  }, []);
+
+  const visibleCards = allCards.filter((c) => c.category === activeCategory);
 
   return (
     <div
@@ -108,10 +133,10 @@ const MobileChannelPage = () => {
         })}
       </div>
 
-      {/* Category chips — horizontal scroll */}
+      {/* Category chips — horizontal scroll, no scrollbar */}
       <div
-        className="flex-shrink-0 overflow-x-auto"
-        style={{ padding: "8px 16px 12px", scrollbarWidth: "none" }}
+        className="flex-shrink-0 overflow-x-auto no-scrollbar"
+        style={{ padding: "8px 16px 12px" }}
       >
         <div className="flex items-center gap-2" style={{ width: "max-content" }}>
           {CATEGORIES.map((c) => {
@@ -120,14 +145,14 @@ const MobileChannelPage = () => {
               <button
                 key={c}
                 onClick={() => setActiveCategory(c)}
-                className="relative whitespace-nowrap rounded-xl"
+                className="relative whitespace-nowrap rounded-xl active:scale-95"
                 style={{
                   padding: "8px 16px",
                   fontSize: 14,
                   fontWeight: 500,
                   background: active ? "#71F0F6" : "rgba(255,255,255,0.1)",
                   color: active ? "#000" : "rgba(255,255,255,0.7)",
-                  transition: "background .2s, color .2s",
+                  transition: "background .2s, color .2s, transform .15s",
                 }}
               >
                 {active && (
@@ -148,53 +173,61 @@ const MobileChannelPage = () => {
         </div>
       </div>
 
-      {/* 2-column card grid */}
+      {/* 2-column card grid — no scrollbar */}
       <div
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto no-scrollbar"
         style={{ padding: "4px 16px 80px" }}
       >
-        <div className="grid grid-cols-2 gap-3">
-          {gridImages.map((card) => (
-            <div
-              key={card.id}
-              className="relative overflow-hidden"
-              style={{
-                aspectRatio: "3/4",
-                borderRadius: 16,
-                background: "#111",
-              }}
-            >
-              <img
-                src={card.image}
-                alt={card.title}
-                className="absolute inset-0 w-full h-full object-cover"
-                loading="lazy"
-              />
+        {visibleCards.length === 0 ? (
+          <div
+            className="w-full text-center"
+            style={{ paddingTop: 48, color: "rgba(255,255,255,0.4)", fontSize: 14 }}
+          >
+            No templates yet
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {visibleCards.map((card) => (
               <button
-                onClick={() => {
-                  // eslint-disable-next-line no-console
-                  console.log("[MobileChannel] play", card.id);
-                }}
-                className="absolute flex items-center justify-center rounded-full active:scale-95 transition-transform"
+                key={card.id}
+                onClick={() => setPlaying({ id: card.id, title: card.title, clip: card.clip })}
+                className="relative overflow-hidden text-left active:scale-[0.98] transition-transform"
                 style={{
-                  width: 28,
-                  height: 28,
-                  top: 8,
-                  right: 8,
-                  background: "rgba(0,0,0,0.35)",
-                  backdropFilter: "blur(6px)",
-                  WebkitBackdropFilter: "blur(6px)",
+                  aspectRatio: "3/4",
+                  borderRadius: 16,
+                  background: "#111",
                 }}
-                aria-label="Play"
               >
-                <Play size={12} fill="#fff" color="#fff" />
+                <img
+                  src={card.image}
+                  alt={card.title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <span
+                  className="absolute flex items-center justify-center rounded-full"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    top: 8,
+                    right: 8,
+                    background: "rgba(0,0,0,0.35)",
+                    backdropFilter: "blur(6px)",
+                    WebkitBackdropFilter: "blur(6px)",
+                  }}
+                  aria-hidden
+                >
+                  <Play size={12} fill="#fff" color="#fff" />
+                </span>
               </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <MobileBottomNav />
+
+      <MobileVideoPlayer card={playing} onClose={() => setPlaying(null)} />
     </div>
   );
 };

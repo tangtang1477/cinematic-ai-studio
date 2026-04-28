@@ -1,13 +1,17 @@
 import { useState } from "react";
-import { Home, Wrench, Library, User, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import iconHome from "@/assets/nav/home.svg";
+import iconToolkit from "@/assets/nav/toolkit.svg";
+import iconAssets from "@/assets/nav/assets.svg";
+import iconProfile from "@/assets/nav/profile.svg";
 
 type NavId = "home" | "toolkit" | "assets" | "profile";
 
-const NAV_ITEMS: { id: NavId; label: string; Icon: typeof Home }[] = [
-  { id: "home", label: "Home", Icon: Home },
-  { id: "toolkit", label: "Toolkit", Icon: Wrench },
-  { id: "assets", label: "My Assets", Icon: Library },
-  { id: "profile", label: "Profile", Icon: User },
+const NAV_ITEMS: { id: NavId; label: string; icon: string }[] = [
+  { id: "home", label: "Home", icon: iconHome },
+  { id: "toolkit", label: "Toolkit", icon: iconToolkit },
+  { id: "assets", label: "My Assets", icon: iconAssets },
+  { id: "profile", label: "Profile", icon: iconProfile },
 ];
 
 const MobileBottomNav = ({ onCreateClick }: { onCreateClick?: () => void }) => {
@@ -23,7 +27,12 @@ const MobileBottomNav = ({ onCreateClick }: { onCreateClick?: () => void }) => {
         style={{ gap: 2, opacity: isActive ? 1 : 0.5 }}
         aria-label={item.label}
       >
-        <item.Icon size={22} className="text-foreground" strokeWidth={isActive ? 2.4 : 2} />
+        <img
+          src={item.icon}
+          alt=""
+          aria-hidden
+          style={{ width: 24, height: 24 }}
+        />
         <span className="text-foreground" style={{ fontSize: 11, lineHeight: "14px" }}>
           {item.label}
         </span>
