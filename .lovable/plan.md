@@ -1,68 +1,90 @@
-## 需求
+## 移动端改造方案（< 768px，桌面端 0 改动）
 
-仅针对移动端（< 768px），桌面端完全不动：
-1. **卡片布局**：取消横向滚动，5 张卡片在默认视口内全部可见
-2. **CreationPanel 控件行**：当前控件 wrap 成 2 行，改为图标化压缩到 1 行
+仅修改在 `useIsMobile()` 为 true 时生效的分支，桌面端代码路径完全保留。
 
-## 方案
+---
 
-### 改动 1：移动端卡片改为等宽紧凑栅格（`src/pages/Index.tsx`）
+### 1. 重构底部导航栏 `MobileBottomNav.tsx`（按 Figma 还原）
 
-390px 视口下，移除横向滚动，改为 5 列等宽 flex 布局：
+Figma 750px 设计稿按比例缩到移动视口（÷2 倍数适配），目标：
 
-- 容器：`flex justify-center gap-1.5 px-3` ，去掉 `overflow-x-auto`、`w-screen`
-- 每张卡片宽度：`flex: 1 1 0`，`max-width: 64px`（5×64 + 4×6 间隙 = 344px，留有余量）
-- 卡片自身 3:4 比例由 TemplateCard 内部 `aspectRatio: "3/4"` 保持，高度自动 ≈ 85px
-- 选中态：保留 `translateY(-6px)` 和发光描边
-- 桌面端逻辑（扇形 + 飞入动画）一行不动
+- 容器：黑色 `#000000`、整行 100% 宽、高度 50px（Figma 100px ÷ 2），顶部 2px 描边 `rgba(255,255,255,0.2)`
+- 5 等分布局：Home / Toolkit / Create(中央凸起) / Assets / Profile
+- 中央 Create：白色圆形 52px（Figma 104 ÷ 2），`top: -25px` 凸出导航栏外，内含黑色 `+` 图标
+- 其他 4 项垂直居中：图标 24px + 文字 12px，`gap: 4px`
+- 状态：
+  - 选中：`opacity: 1`，文字 + 图标白色
+  - 默认：`opacity: 0.5`
+  - 当前演示路由 `/` → "Channel" 字段在 Figma 中没有，按用户要求把 Home 设为当前选中，其他 4 项默认态
+- 交互：点击切换 active 状态（本地 `useState`），中央 `+` 触发 `onCreateClick`（暂留空回调）
+- 字体：`SF Pro`，size 12px line 15px（Figma 24/30 ÷ 2）
+- 移除 4 项中冗余的 channel icon，使用 Figma 列表（home / toolkit / create / assets / profile），用 lucide 图标兜底（Home, Wrench, Plus, Library, User），保留现有 `iconHome / iconToolkit / iconAssets` SVG 资源若可用
 
-```tsx
-// 仅当 isMobile 时
-<div className="flex items-end justify-center gap-1.5 px-3 w-full">
-  {templates.map((t, i) => (
-    <div style={{ flex: "1 1 0", maxWidth: 64, ... }}>
-      <TemplateCard ... />
-    </div>
-  ))}
-</div>
+### 2. 移动端去掉视频背景与主标题副标题（`Index.tsx`）
+
+仅在 `isMobile` 为 true 时：
+- 三个 `<video>` 与 poster `<img>`、深色 overlay 全部不渲染
+- 隐藏 `<HeroSection>`（intro 与 ready 阶段都不渲染）
+- 跳过 `intro → loop → cards-fly` 的视频驱动流程：直接进入 `ready`，让 `cardsSettled = true`、`showPanel = true`，确保创作面板和卡片栅格一进页面就可见
+- 桌面端仍按原逻辑播放视频与 hero 文案
+
+### 3. 移动端改为 Channel(Lab) 频道页（新增 `MobileChannelPage.tsx`）
+
+按 Figma 还原，结构：
+
+```text
+┌─ topbar 44px ─────────────────────┐
+│ MovieFlow logo  ·  🪙 320  · 🔔   │
+├─ tabs 28px ───────────────────────┤
+│ For You    Lab●    AIdeo World    Fun│
+│            ━━━ (青色发光下划线)        │
+├─ category chips 横滑 ─────────────┤
+│ [3D] [Live-action] [Image Play]    │
+│ [Narrative] [MV] [Education] [...]│
+├─ 2 列瀑布流 ────────────────────── │
+│ [img]  [img]                       │
+│ [img]  [img]   每张 3:4，圆角 16px │
+│   ⋮     ⋮      右上角播放按钮       │
+└────────────────────────────────────┘
 ```
 
-由于卡片很小，移动端 TemplateCard 内部需要隐藏底部描述文字，仅保留图片 + tap 后浮出 Try 按钮。在 TemplateCard 增加可选 `compact` prop（默认 false），移动端传 `compact`，描述段落隐藏，Try 按钮缩小为图标按钮。
+具体细节：
+- **顶部栏**：黑底 44px，左侧 `MovieFlow` 青色 18px 粗体；右侧积分图标 + `320` + 通知铃铛
+- **顶部 Tabs**：4 个 — `For You` / `Lab` / `AIdeo World` / `Fun`，仅 `Lab` 选中态（白色 + 青色 24px 圆角下划线 + 模糊光晕），其他三个 `opacity:0.5`，可点击切换
+- **分类按钮排（横向滚动）**：顺序按用户要求 **3D, Live-action 提前**：
+  `3D` → `Live-action` → `Image Play` → `Narrative` → `MV` → `Education` → `Commercial` → `2D`
+  - 默认：`bg rgba(255,255,255,0.1)`，文字 `rgba(255,255,255,0.7)`
+  - 选中：`bg #71F0F6`，文字黑色，背景模糊光晕
+  - 单选切换 `useState`，初始默认选中 `3D`
+- **卡片网格**：复用 `templates` 数据 + `templateImagesAlt` 凑足 8–10 张，2 列 grid，gap 12px，水平 padding 16px
+  - 每张：3:4 图、`borderRadius: 16px`
+  - 右上角 24px 圆形毛玻璃 Play 按钮（`bg rgba(0,0,0,0.2)` + `backdrop-blur 5px` + 三角图标）
+  - 点击播放按钮 → 暂留 console（不接入实际播放）
+- **底部留 60px 安全区**避免内容被 `MobileBottomNav` 遮挡
 
-### 改动 2：CreationPanel 控件行图标化（`src/components/CreationPanel.tsx`）
+### 4. `Index.tsx` 路由分流
 
-当前 5 个胶囊按钮（Model / Duration / Aspect / Voice / GenMode）+ Make 按钮，在 390px 下必然 2 行。
+在组件顶部：
 
-移动端策略（用 `useIsMobile` 检测）：
-- **隐藏文字标签**，仅保留 icon + ChevronDown 小箭头
-  - Model：去掉 "Seedance 2.0" 文字 → 只剩 icon（用 `Box` 或 `Layers` 图标，原本无 icon 需新增）
-  - Duration：保留 `iconTime`，去掉 "1 min" 文字
-  - Aspect：保留 RatioIcon，去掉 "16:9" 文字
-  - Voice：保留 `Mic` icon，去掉 "Warm Female" 文字
-  - GenMode：保留 `Sparkles` icon，去掉 "Director" 文字
-- 按钮 padding 从 `px-3 py-1.5` → `px-2 py-1.5`，移除 `ChevronDown`（移动端）
-- Make 按钮：保留图标 + 文字，但缩小为 `px-3 py-1.5`
-- 容器内边距 `px-5 pb-3` → `px-3 pb-2`，gap 从 `gap-2` → `gap-1.5`
-- `flex-wrap` 改为 `flex-nowrap`，确保 1 行
+```tsx
+if (isMobile) return <MobileChannelPage />;
+```
 
-预估宽度：5 × 36px（icon 按钮）+ 4 × 6px gap + Make ~70px + 容器内边距 24px ≈ 298px，在 390px 视口内安全单行。
+桌面端原渲染逻辑完全不变。
 
-桌面端（`!isMobile`）渲染保持完整文字 + ChevronDown，不动。
-
-### 改动 3：辅助 - 移动端去掉 Tabs 上方输入区的 placeholder 长度问题
-
-CreationPanel 的 textarea 当前 `rows={2}`，placeholder 较长，在窄屏会换行。这部分暂不动（已能正常显示），保持现状。
+---
 
 ## 涉及文件
 
 | 文件 | 改动 |
 |---|---|
-| `src/pages/Index.tsx` | 移动端卡片容器：去掉 `overflow-x-auto`、`w-screen`、固定 160px 宽；改为 `flex justify-center gap-1.5`，每卡 `flex:1 1 0` + `max-width:64px`；传 `compact` 给 TemplateCard |
-| `src/components/TemplateCard.tsx` | 新增 `compact?: boolean` prop；compact 模式隐藏描述段落，Try 按钮改为仅图标小尺寸 |
-| `src/components/CreationPanel.tsx` | 引入 `useIsMobile`；移动端控件按钮去掉文字 label 与 ChevronDown，仅保留 icon；Model 按钮新增一个 icon（`Box`）；容器 padding/gap 收紧；保持桌面端原状 |
+| `src/components/MobileBottomNav.tsx` | 重写：5 项布局、中央 Create 凸起按钮、顶部分隔线、active 状态切换 |
+| `src/components/MobileChannelPage.tsx` | 新建：topbar + Tabs + 分类胶囊（3D/Live-action 提前）+ 2 列卡片网格 |
+| `src/pages/Index.tsx` | `isMobile` 时直接 return `<MobileChannelPage />` + `<MobileBottomNav />`；桌面端逻辑保持原状 |
 
 ## 验收
 
-1. 390px 视口：5 张小卡片在 hero 下方一行平铺居中，无需滚动即可看全
-2. CreationPanel 控件行 5 个 icon 按钮 + Make 按钮一行排列，不换行
-3. 768px 及以上视口：卡片扇形堆叠 + 飞入动画 + 控件完整文字，与之前完全一致
+1. 桌面端（≥ 768px）：与当前完全一致（视频、扇形卡片、CreationPanel 都不变）
+2. 移动端（< 768px）：进入即看到 Channel/Lab 频道页 — 顶部 MovieFlow 栏、Lab 选中的 Tabs、3D 选中的分类胶囊（3D 与 Live-action 在最前）、2 列卡片网格
+3. 底部导航 5 项布局精确还原 Figma：Home 当前选中、中央 Create 凸起白色圆按钮、其余项 50% 透明
+4. 分类胶囊点击可切换选中态；Tabs 点击可切换选中态

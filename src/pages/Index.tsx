@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import AppSidebar from "@/components/AppSidebar";
-import MobileBottomNav from "@/components/MobileBottomNav";
+import MobileChannelPage from "@/components/MobileChannelPage";
 import HeroSection from "@/components/HeroSection";
 import CreationPanel from "@/components/CreationPanel";
 import TemplateCard from "@/components/TemplateCard";
@@ -182,6 +182,10 @@ const Index = () => {
     setPhase("ready");
   }, []);
 
+  if (isMobile) {
+    return <MobileChannelPage />;
+  }
+
   const isIntro = phase === "intro";
 
   // Pre-compute layout
@@ -266,7 +270,6 @@ const Index = () => {
       </div>
 
       <AppSidebar />
-      <MobileBottomNav />
       <div className="flex-1 md:ml-[88px] flex flex-col h-screen overflow-hidden relative">
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-[1]">
