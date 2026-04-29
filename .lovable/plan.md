@@ -1,99 +1,40 @@
-# Mobile Channel Page — Interactions & Player
+仅移动端改动（`MobileVideoPlayer.tsx`），桌面端完全不动。
 
-All changes are mobile-only (`md:hidden` / `useIsMobile`). Desktop stays untouched.
+## 1. 删除右侧 Remix 按钮
 
-## 1. Bottom nav icons → custom SVGs
+右侧操作栏（`right: 12, bottom: 120`）当前是 Like / Remix / Share 三个按钮：
 
-Copy the 4 uploaded SVGs into `src/assets/nav/`:
-- `home.svg`, `toolkit.svg`, `assets.svg`, `profile.svg`
+- 移除中间的 Remix 按钮（含 `remixIcon` 引用与 "Remix" label）
+- 保留 Like 和 Share
+- 保留 `MobileRemixInput` 挂载与 `remixOpen` 状态——改由新按钮触发
 
-In `MobileBottomNav.tsx`:
-- Replace lucide `Home / Wrench / Library / User` with `<img src={icon} />` at 22×22.
-- Inactive: `opacity:0.5`. Active: `opacity:1`. Center "Create" button unchanged.
+## 2. 右下角新增 "Recreate" 胶囊按钮
 
-## 2. Hide scrollbars (keep scroll behaviour)
+参考附件中右下角"一键同款"绿色胶囊按钮的形状与位置，做英文版：
 
-In `MobileChannelPage.tsx`, on the category-chip strip and the grid scroll container, add a utility class `.no-scrollbar`:
+- 文案：`Recreate`（英文）
+- 位置：`absolute`，`right: 16`，`bottom: 32`
+- 样式：
+  - 胶囊：`height: 44px`，`padding: 0 20px`，`border-radius: 22px`
+  - 背景：`#71F0F6`（赛博青，匹配主题色）
+  - 文字：`#000`，`fontSize: 15`，`fontWeight: 600`
+  - 阴影：`0 4px 16px rgba(198,255,74,0.35)`
+  - 交互：`active:scale-95`
+- 点击：`setRemixOpen(true)`，复用现有 Remix 输入抽屉
 
-```css
-/* index.css */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-```
+## 3. 底部标题布局微调
 
-Touch / wheel scrolling continues to work.
+原标题区 `bottom: 32, left: 16, right: 80` 调整为 `right: 220`，避免与新按钮重叠。
 
-## 3. Category filtering with selected state
+---
 
-- Map each card to a `category` field (cycle through `3D`, `Live-action`, `Image Play`, `Narrative`, `MV`, `Education`, `Commercial`, `2D`) so each chip surfaces a different subset.
-- Filtered list: `gridImages.filter(c => c.category === activeCategory)`.
-- Selected chip already styled (cyan pill + glow). Confirm contrast and add a subtle scale/opacity transition on tap.
+## 涉及文件
 
-## 4. Full-screen video player
+**编辑**
 
-Copy uploads to project:
-- `user-uploads://19.gif → src/assets/clips/clip-19.gif`
-- `20.gif`, `21.gif`, `22.gif` → `clip-20.gif`, `clip-21.gif`, `clip-22.gif`
-
-Tapping any grid card opens a new component **`MobileVideoPlayer.tsx`** rendered as a `fixed inset-0 z-[60]` overlay:
-
-Layout (mapped from the 750×1624 Figma to viewport units):
-- Background: full-bleed `<img>` of the card's GIF, `object-cover`.
-- Top-left **Back** button (40×40, `rgba(0,0,0,0.35)` + `backdrop-blur`, rounded-full) with a rotated arrow.
-- Top-right **Sound off** button (same style) with a speaker-mute icon.
-- Right rail at `bottom: ~22%`, vertical stack `gap: 28px`:
-  - **Like** — heart outline → fills `#ef4444` when toggled, count below ("Like" label or number).
-  - **Remix** — wand/sparkles glyph, label "Remix".
-  - **Share** — paper-plane outline, label "Share".
-- All labels: white, 13px, with subtle text-shadow.
-
-Interactions:
-- Back → close player.
-- Like → toggle heart fill + colour, optimistic count++.
-- Share → no-op (console log) for now.
-- Remix → opens the Remix input drawer (below).
-
-## 5. Remix input drawer (animated)
-
-New component **`MobileRemixInput.tsx`** rendered inside the player when `remixOpen`:
-
-- `fixed bottom-0 left-0 right-0` panel, height ~150px.
-- `background: rgba(0,0,0,0.5)`, `border-top: 1px solid rgba(255,255,255,0.2)`, `backdrop-blur(7.5px)`, `border-radius: 24px 24px 0 0`.
-- Slide-in animation: `translateY(100%) → 0`, 280ms `cubic-bezier(0.22,1,0.36,1)`. Slide-out on close.
-- Backdrop: `rgba(0,0,0,0.4)` fade behind it; tap-to-dismiss.
-- Contents:
-  - Top row: textarea-like `<input>` placeholder "Describe changes…", white 50% colour.
-  - Bottom row (left → right):
-    - `+` button — 40×40 circle, `#151515`, border `#202020`.
-    - Spacer (flex-1).
-    - Settings gear button — same style.
-    - Send button — 40×40 white circle, black up-arrow icon. Disabled (opacity 0.4) when input empty.
-- Auto-focus the input when opened; `Esc` / backdrop tap closes.
-
-## 6. State wiring
-
-In `MobileChannelPage.tsx`:
-
-```ts
-const [playingCard, setPlayingCard] = useState<Card | null>(null);
-// onClick of grid card → setPlayingCard(card)
-// <MobileVideoPlayer card={playingCard} onClose={() => setPlayingCard(null)} />
-```
-
-Each card gets a `clip` field assigned round-robin from the 4 GIFs so every card plays one of the uploaded animations.
-
-## Files
-
-**New**
 - `src/components/MobileVideoPlayer.tsx`
-- `src/components/MobileRemixInput.tsx`
-- `src/assets/nav/home.svg`, `toolkit.svg`, `assets.svg`, `profile.svg`
-- `src/assets/clips/clip-19.gif`, `clip-20.gif`, `clip-21.gif`, `clip-22.gif`
 
-**Edited**
-- `src/components/MobileBottomNav.tsx` — swap to SVG icons
-- `src/components/MobileChannelPage.tsx` — category filtering, hide scrollbars, open player
-- `src/index.css` — `.no-scrollbar` utility
+**不动**
 
-**Untouched**
-- All desktop code paths (`Index.tsx` desktop branch, `HeroSection`, `CreationPanel`, `TemplateCard`, `FlyingCardsScene`, etc.)
+- `MobileRemixInput.tsx`、`MobileChannelPage.tsx`、`MobileBottomNav.tsx`、桌面端全部代码
+- `remix.svg` 资产保留（不删，仅停用引用）
