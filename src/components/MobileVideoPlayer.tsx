@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, Heart, Send, VolumeX, Volume2 } from "lucide-react";
 import MobileRemixInput from "./MobileRemixInput";
-import remixIcon from "@/assets/icons/remix.svg";
 
 export interface PlayerCard {
   id: string;
@@ -138,24 +137,6 @@ const MobileVideoPlayer = ({ card, onClose }: Props) => {
         </button>
 
         <button
-          onClick={() => setRemixOpen(true)}
-          className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
-          aria-label="Remix"
-        >
-          <img
-            src={remixIcon}
-            alt=""
-            aria-hidden
-            style={{
-              width: 32,
-              height: 32,
-              filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
-            }}
-          />
-          <span style={labelStyle}>Remix</span>
-        </button>
-
-        <button
           onClick={() => console.log("[Player] share")}
           className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
           aria-label="Share"
@@ -172,13 +153,34 @@ const MobileVideoPlayer = ({ card, onClose }: Props) => {
 
       {/* Title */}
       <div
-        className="absolute left-4 right-20"
+        className="absolute left-4"
         style={{ bottom: 32 }}
       >
         <p style={{ ...labelStyle, fontSize: 15, fontWeight: 600 }}>
           {card.title}
         </p>
       </div>
+
+      {/* Recreate CTA */}
+      <button
+        onClick={() => setRemixOpen(true)}
+        className="absolute active:scale-95 transition-transform"
+        style={{
+          right: 16,
+          bottom: 32,
+          height: 44,
+          padding: "0 20px",
+          borderRadius: 22,
+          background: "#71F0F6",
+          color: "#000",
+          fontSize: 15,
+          fontWeight: 600,
+          boxShadow: "0 4px 16px rgba(113,240,246,0.35)",
+          border: "none",
+        }}
+      >
+        Recreate
+      </button>
 
       <MobileRemixInput
         open={remixOpen}
